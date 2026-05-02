@@ -1,6 +1,6 @@
 // oxyl-lexer 
 
-/// A half-open byte range `[startm end]` within a source file.
+/// A half-open byte range `[start, end]` within a source file.
 ///
 /// Every token will carry one of these so errors can point at the 
 /// exact bytes that caused the problem.
@@ -11,7 +11,7 @@ pub struct Span {
 }
 
 impl Span {
-    pub fn new(start: usize, end:usize) -> Self {
+    pub fn new(start: usize, end: usize) -> Self {
         Self { start, end }
     }
 
