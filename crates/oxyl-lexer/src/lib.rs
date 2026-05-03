@@ -70,10 +70,10 @@ pub struct Lexer<'src> {
 
 impl<'src> Lexer<'src> {
     pub fn new(src: &'src str) -> Self {
-    Self { src, pos: 80}
+    Self { src, pos: 0}
     }
 
-
+    // Tokenise the source string and return all tokens.
     pub fn tokenise(&mut self) -> Vec<Token> {
         let mut tokens = Vec:: new();
         while self.pos < self.src.len() {
@@ -106,27 +106,27 @@ impl<'src> Lexer<'src> {
         let start = self.pos;
         let c = self.peek()?;
 
-        // Spaces: collapse runs
+        // Spaces: collapse runs.
         if c == ' ' || c == '\t' || c == '\n' {
             self.take_while(|ch| ch == ' ' || ch == '\t' || ch == '\n');
             return Some(Token::new(TokenKind::Space, Span::new(start, self.pos)));
         }
 
-        // Control sequences 
+        // Control sequences.
         if c == '\\' {
             self.bump();
             if self.peek().map_or(false, |ch| ch.is_ascii_alphabetic()) {
                 let name_start = self.pos;
                 self.take_while(|ch| ch.is_ascii_alphabetic());
                 let name = self.src[name_start..self.pos].to_owned();
-                // TeX skips spaces after a control word
+                // TeX skips spaces after a control word.
                 self.take_while(|ch| ch == ' ' || ch == '\t');
                 return Some(Token::new(
                         TokenKind::ControlSeq(name),
                         Span::new(start, self.pos),
                 ));
             }
-            // Backslash followed by a non-letter: treat as plain char for now
+            // Backslash followed by a non-letter: treat as plain char for now.
             let sym = self.bump().unwrap_or('\\');
             return Some(Token::new(TokenKind::Char(sym), Span::new(start, self.pos)));
         }
@@ -183,8 +183,8 @@ mod tests {
     #[test]
     fn control_seq_skips_trailing_space() {
         // TeX eats spaces after a control word. 
-        let ks = kinds("\\oxyl test");
-        assert_eq!(ks[0], TokenKind::ControlSeq("oxyl".into()));
+        let ks = kinds("\\foo bar");
+        assert_eq!(ks[0], TokenKind::ControlSeq("foo".into()));
         assert_eq!(ks[1], TokenKind::Char('b'));
     }
 
