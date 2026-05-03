@@ -314,4 +314,15 @@ mod tests {
         let b = Span::new(8, 12);
         assert_eq!(a.merge(b), Span::new(0,12));
     }
+
+    #[test]
+    fn span_display() {
+        assert_eq!(Span::new(3, 7).to_string(), "3..7");
+    }
+
+    #[test]
+    fn token_display() {
+        let t = Token::new(TokenKind::ControlSeq("frac".into()), Span::new(0, 5));
+        assert_eq!(t.to_string(), "\\frac @ 0..5");
+    }
 }
