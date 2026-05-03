@@ -57,6 +57,10 @@ pub enum TokenKind {
     /// `~` - non-breaking space (active character in plain LaTeX).
     Tilde,
 
+    /// A `%` comment. The stored string is the comment body, not 
+    /// including the `%` or the terminating newline.
+    Comment(String),
+
     /// One or more spaces, tabs, or newlines (collapsed into a single token).
     Space,
 
@@ -91,7 +95,7 @@ impl<'src> Lexer<'src> {
         Self { src, pos: 0 }
     }
 
-    // Tokenise the source string and return all tokens.
+    /// Tokenise the source string and return all tokens.
     pub fn tokenise(&mut self) -> Vec<Token> {
         let mut tokens = Vec::new();
         while self.pos < self.src.len() {
@@ -124,6 +128,20 @@ impl<'src> Lexer<'src> {
         let start = self.pos;
         let c = self.peek()?;
 
+        // Line comments: consume to end of line 
+        if c == '%' {
+            self.bump(); // consume `%`
+            let body = self.take_while(|ch| ch != '\n').to_owned();
+            // Consume the newline itself so it does not become a Space token.
+            if self.peek() == Some('\n') {
+                self.bump();
+            }
+            return Some(Token::new(
+                    TokenKind::Comment(body),
+                    Span::new(start, self.pos),
+            ));
+        }
+
         // Spaces: collapse runs.
         if c == ' ' || c == '\t' || c == '\n' {
             self.take_while(|ch| ch == ' ' || ch == '\t' || ch == '\n');
@@ -144,7 +162,7 @@ impl<'src> Lexer<'src> {
                     Span::new(start, self.pos),
                 ));
             }
-            // Backslash followed by a non-letter: treat as plain char for now.
+            // Backslash followed by a non-letter: treat as a plain char for now.
             let sym = self.bump().unwrap_or('\\');
             return Some(Token::new(TokenKind::Char(sym), Span::new(start, self.pos)));
         }
@@ -234,5 +252,19 @@ mod tests {
         assert_eq!(kinds("^"), vec![TokenKind::Superscript]);
         assert_eq!(kinds("_"), vec![TokenKind::Subscript]);
         assert_eq!(kinds("~"), vec![TokenKind::Tilde]);
+    }
+
+    #[test]
+    fn comment_to_end_of_line() {
+        let ks = kinds("a% this is ignored\nb");
+        assert_eq!(ks[0], TokenKind::Char('a'));
+        assert_eq!(ks[1], TokenKind::Comment(" this is ignored".into()));
+        assert_eq!(ks[2], TokenKind::Char('b'));
+    }
+
+    #[test]
+    fn comment_at_end_of_input() {
+        let ks = kinds("% no newline");
+        assert_eq!(ks, vec![TokenKind::Comment(" no newline".into())]);
     }
 }
