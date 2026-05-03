@@ -18,4 +18,7 @@ fn main() {
 
     let tokens = Lexer::new(&src).tokenise();
     println!("{} token(s) in {path}", tokens.len());
+    for tok in &tokens {
+        println!("  {tok}");
+    }
 }
