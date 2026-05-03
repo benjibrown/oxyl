@@ -37,7 +37,7 @@ pub enum TokenKind {
     BeginGroup,
 
     /// `}`
-    Endgroup,
+    EndGroup,
 
     /// One or more spaces or tabs (collapsed into a single token).
     Space,
