@@ -33,6 +33,12 @@ impl Span {
     }
 }
 
+impl std::fmt::Display for Span {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}..{}", self.start, self.end)
+    }
+}
+
 /// The kind of a single lexical token.
 ///
 /// This is a first pass - will add more variants later on.
@@ -48,7 +54,7 @@ pub enum TokenKind {
     /// `}`
     EndGroup,
 
-    /// `$` - madth mode switch.
+    /// `$` - math mode switch.
     MathShift,
 
     /// `&` - column seperator in tables and alignments.
