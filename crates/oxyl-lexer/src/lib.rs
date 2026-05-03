@@ -143,9 +143,16 @@ impl<'src> Lexer<'src> {
 }
 
 
+
+
+// Tests 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn kinds(src: &str) -> Vec<TokenKind> {
+        Lexer::new(src).tokenise().into_iter().map(|t| t.kind).collect()
+    }
 
     #[test]
     fn span_len() {
@@ -153,19 +160,45 @@ mod tests {
     }
     
     #[test]
-    fn span_zero_len() {
-        assert_eq!(Span::new(3, 3).len(), 0);
-    }
-
-    #[test]
     fn span_is_empty() {
         assert!(Span::new(2, 2).is_empty());
         assert!(!Span::new(2, 3).is_empty());
     }
+    
+    #[test]
+    fn empty_input() {
+        assert_eq!(kinds(""), vec![]);
+    }
 
     #[test]
-    fn token_stores_span() {
-        let t = Token::new(TokenKind::BeginGroup, Span::new(4, 5));
-        assert_eq!(t.span.len(), 1);
+    fn plain_chars() {
+        assert_eq!(kinds("ab"), vec![TokenKind::Char('a'), TokenKind::Char('b')]);
+    }
+
+    #[test]
+    fn control_seq() {
+        assert_eq!(kinds("\\hello"), vec![TokenKind::ControlSeq("hello".into())]);
+    }
+
+    #[test]
+    fn control_seq_skips_trailing_space() {
+        // TeX eats spaces after a control word. 
+        let ks = kinds("\\oxyl test");
+        assert_eq!(ks[0], TokenKind::ControlSeq("oxyl".into()));
+        assert_eq!(ks[1], TokenKind::Char('b'));
+    }
+
+    #[test]
+    fn groups () {
+        assert_eq!(kinds("{}"), vec![TokenKind::BeginGroup, TokenKind::EndGroup]);
+    }
+
+    #[test]
+    fn space_collapse() {
+        assert_eq!(kinds("a  b"), vec![
+            TokenKind::Char('a'),
+            TokenKind::Space,
+            TokenKind::Char('b'),
+        ]);
     }
 }
