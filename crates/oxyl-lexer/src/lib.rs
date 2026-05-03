@@ -109,7 +109,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Subscript => write!(f, "_"),
             TokenKind::Tilde => write!(f, "~"),
             TokenKind::Space => write!(f, "<space>"),
-            TokenKind::Comment(body) => wite!(f, "%{body}"),
+            TokenKind::Comment(body) => write!(f, "%{body}"),
             TokenKind::Char(c) => write!(f, "{c}"),
         }
     }
@@ -306,5 +306,12 @@ mod tests {
     fn comment_at_end_of_input() {
         let ks = kinds("% no newline");
         assert_eq!(ks, vec![TokenKind::Comment(" no newline".into())]);
+    }
+
+    #[test]
+    fn span_merge() {
+        let a = Span::new(0, 5);
+        let b = Span::new(8, 12);
+        assert_eq!(a.merge(b), Span::new(0,12));
     }
 }
