@@ -22,6 +22,15 @@ impl Span {
     pub fn is_empty(&self) -> bool {
         self.start == self.end
     }
+
+    /// Merge two spans into one that covers both. The spans do not need to be 
+    /// adajcent, but `self` should come before `other` in the source.
+    pub fn merge(self, other: Span) -> Span {
+        Span {
+            start: self.start.min(other.start),
+            end: self.end.max(other.end),
+        }
+    }
 }
 
 /// The kind of a single lexical token.
