@@ -70,7 +70,7 @@ pub struct Lexer<'src> {
 
 impl<'src> Lexer<'src> {
     pub fn new(src: &'src str) -> Self {
-    Self { src, pos: 0}
+        Self { src, pos: 0 }
     }
 
     // Tokenise the source string and return all tokens.
@@ -122,8 +122,8 @@ impl<'src> Lexer<'src> {
                 // TeX skips spaces after a control word.
                 self.take_while(|ch| ch == ' ' || ch == '\t');
                 return Some(Token::new(
-                        TokenKind::ControlSeq(name),
-                        Span::new(start, self.pos),
+                    TokenKind::ControlSeq(name),
+                    Span::new(start, self.pos),
                 ));
             }
             // Backslash followed by a non-letter: treat as plain char for now.
@@ -189,7 +189,7 @@ mod tests {
     }
 
     #[test]
-    fn groups () {
+    fn groups() {
         assert_eq!(kinds("{}"), vec![TokenKind::BeginGroup, TokenKind::EndGroup]);
     }
 
