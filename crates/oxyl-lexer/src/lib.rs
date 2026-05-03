@@ -96,6 +96,24 @@ impl Token {
     }
 }
 
+impl std::fmt::Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self{
+            TokenKind::ControlSeq(name) => write!(f, "\\{name}"),
+            TokenKind::BeginGroup => write!(f, "{{"),
+            TokenKind::EndGroup => write!(f, "}}"),
+            TokenKind::MathShift => write!(f, "$"),
+            TokenKind::AlignTab => write!(f, "&"),
+            TokenKind::Parameter => write!(f, "#"),
+            TokenKind::Superscript => write!(f, "^"),
+            TokenKind::Subscript => write!(f, "_"),
+            TokenKind::Tilde => write!(f, "~"),
+            TokenKind::Space => write!(f, "<space>"),
+            TokenKind::Comment(body) => wite!(f, "%{body}"),
+            TokenKind::Char(c) => write!(f, "{c}"),
+        }
+    }
+}
 // ------ 
 // Lexer 
 // ----- 
