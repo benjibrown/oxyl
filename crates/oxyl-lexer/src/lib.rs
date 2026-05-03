@@ -114,6 +114,13 @@ impl std::fmt::Display for TokenKind {
         }
     }
 }
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} @ {}", self.kind, self.span)
+    }
+}
+
 // ------ 
 // Lexer 
 // ----- 
@@ -163,15 +170,15 @@ impl<'src> Lexer<'src> {
 
         // Line comments: consume to end of line 
         if c == '%' {
-            self.bump(); // consume `%`
+            self.bump(); // consume '%'
             let body = self.take_while(|ch| ch != '\n').to_owned();
             // Consume the newline itself so it does not become a Space token.
             if self.peek() == Some('\n') {
                 self.bump();
             }
             return Some(Token::new(
-                    TokenKind::Comment(body),
-                    Span::new(start, self.pos),
+                TokenKind::Comment(body),
+                Span::new(start, self.pos),
             ));
         }
 
