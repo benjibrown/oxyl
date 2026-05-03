@@ -225,4 +225,14 @@ mod tests {
             TokenKind::Char('b'),
         ]);
     }
+
+    #[test]
+    fn special_chars() {
+        assert_eq!(kinds("$"), vec![TokenKind::MathShift]);
+        assert_eq!(kinds("&"), vec![TokenKind::AlignTab]);
+        assert_eq!(kinds("#"), vec![TokenKind::Parameter]);
+        assert_eq!(kinds("^"), vec![TokenKind::Superscript]);
+        assert_eq!(kinds("_"), vec![TokenKind::Subscript]);
+        assert_eq!(kinds("~"), vec![TokenKind::Tilde]);
+    }
 }
