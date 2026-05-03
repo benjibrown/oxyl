@@ -39,7 +39,25 @@ pub enum TokenKind {
     /// `}`
     EndGroup,
 
-    /// One or more spaces, tabs, or new lines (collapsed into a single token).
+    /// `$` - madth mode switch.
+    MathShift,
+
+    /// `&` - column seperator in tables and alignments.
+    AlignTab,
+
+    /// `#` - parameter character in macro definitions.
+    Parameter,
+
+    /// `^` - superscript.
+    Superscript,
+
+    /// `_` - subscript.
+    Subscript,
+
+    /// `~` - non-breaking space (active character in plain LaTeX).
+    Tilde,
+
+    /// One or more spaces, tabs, or newlines (collapsed into a single token).
     Space,
 
     /// Any other single character.
@@ -75,7 +93,7 @@ impl<'src> Lexer<'src> {
 
     // Tokenise the source string and return all tokens.
     pub fn tokenise(&mut self) -> Vec<Token> {
-        let mut tokens = Vec:: new();
+        let mut tokens = Vec::new();
         while self.pos < self.src.len() {
             if let Some(tok) = self.next_token() {
                 tokens.push(tok);
@@ -136,6 +154,12 @@ impl<'src> Lexer<'src> {
         let kind = match c {
             '{' => TokenKind::BeginGroup,
             '}' => TokenKind::EndGroup,
+            '$' => TokenKind::MathShift,
+            '&' => TokenKind::AlignTab,
+            '#' => TokenKind::Parameter,
+            '^' => TokenKind::Superscript,
+            '_' => TokenKind::Subscript,
+            '~' => TokenKind::Tilde,
             other => TokenKind::Char(other),
         };
         Some(Token::new(kind, span))
