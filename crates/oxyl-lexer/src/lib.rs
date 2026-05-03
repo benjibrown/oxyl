@@ -39,14 +39,14 @@ pub enum TokenKind {
     /// `}`
     EndGroup,
 
-    /// One or more spaces or tabs (collapsed into a single token).
+    /// One or more spaces, tabs, or new lines (collapsed into a single token).
     Space,
 
     /// Any other single character.
     Char(char),
 }
 
-/// A token together with uits location in the source.
+/// A token together with its location in the source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
@@ -58,6 +58,90 @@ impl Token {
         Self { kind, span }
     }
 }
+
+// ------ 
+// Lexer 
+// ----- 
+
+pub struct Lexer<'src> {
+    src: &'src str,
+    pos: usize,
+}
+
+impl<'src> Lexer<'src> {
+    pub fn new(src: &'src str) -> Self {
+    Self { src, pos: 80}
+    }
+
+
+    pub fn tokenise(&mut self) -> Vec<Token> {
+        let mut tokens = Vec:: new();
+        while self.pos < self.src.len() {
+            if let Some(tok) = self.next_token() {
+                tokens.push(tok);
+            }
+        }
+        tokens
+    }
+
+    fn peek(&self) -> Option<char> {
+        self.src[self.pos..].chars().next()
+    }
+
+    fn bump(&mut self) -> Option<char> {
+        let c = self.peek()?;
+        self.pos += c.len_utf8();
+        Some(c)
+    }
+
+    fn take_while(&mut self, pred: impl Fn(char) -> bool) -> &'src str {
+        let start = self.pos; 
+        while self.peek().map_or(false, &pred) {
+            self.bump();
+        }
+        &self.src[start..self.pos]
+    }
+
+    fn next_token(&mut self) -> Option<Token> {
+        let start = self.pos;
+        let c = self.peek()?;
+
+        // Spaces: collapse runs
+        if c == ' ' || c == '\t' || c == '\n' {
+            self.take_while(|ch| ch == ' ' || ch == '\t' || ch == '\n');
+            return Some(Token::new(TokenKind::Space, Span::new(start, self.pos)));
+        }
+
+        // Control sequences 
+        if c == '\\' {
+            self.bump();
+            if self.peek().map_or(false, |ch| ch.is_ascii_alphabetic()) {
+                let name_start = self.pos;
+                self.take_while(|ch| ch.is_ascii_alphabetic());
+                let name = self.src[name_start..self.pos].to_owned();
+                // TeX skips spaces after a control word
+                self.take_while(|ch| ch == ' ' || ch == '\t');
+                return Some(Token::new(
+                        TokenKind::ControlSeq(name),
+                        Span::new(start, self.pos),
+                ));
+            }
+            // Backslash followed by a non-letter: treat as plain char for now
+            let sym = self.bump().unwrap_or('\\');
+            return Some(Token::new(TokenKind::Char(sym), Span::new(start, self.pos)));
+        }
+
+        self.bump();
+        let span = Span::new(start, self.pos);
+        let kind = match c {
+            '{' => TokenKind::BeginGroup,
+            '}' => TokenKind::EndGroup,
+            other => TokenKind::Char(other),
+        };
+        Some(Token::new(kind, span))
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
