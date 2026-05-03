@@ -1,6 +1,10 @@
-# oxyl
+<div align="center">
 
-A LaTeX compiler written in Rust.
+<img src="https://github.com/benjibrown/oxyl/blob/main/assets/logo.png?raw=true" alt="logo" width="900"/>
+
+**A LaTeX compiler written in Rust.**
+</div>
+
 
 **Status:** very early stage - workspace skeleton only, nothing to compile documents yet or produce an AST etc.
 
