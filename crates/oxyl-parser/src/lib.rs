@@ -73,7 +73,15 @@ mod tests {
 
     #[test]
     fn text_node_span() {
-        let span = Span::new(0,5);
+        let span = Span::new(0, 5);
         let node = Node::Text("hello".into(), span);
+        assert_eq!(node.span(), span);
+    }
+
+    #[test]
+    fn group_node_span() {
+        let span = Span::new(2, 9);
+        let node = Node::Group(vec![], span);
+        assert_eq!(node.span(), span);
     }
 }
