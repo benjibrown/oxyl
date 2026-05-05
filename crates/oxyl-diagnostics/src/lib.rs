@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn error_display() {
         let d = Diagnostic::error("E001", "undefined control sequence");
-            assert_eq!(d.to_string(), "error [E001]: undefined control sequence");
+        assert_eq!(d.to_string(), "error [E001]: undefined control sequence");
     }
 
     #[test]
