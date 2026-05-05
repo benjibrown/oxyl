@@ -27,13 +27,14 @@ pub enum Node {
 
     /// A LaTeX command and its arguments, e.g. `\textbf{hello}`.
     Command {
+        /// Name without the leading backslash, e.g. `"textbf"`.
         name: String ,
         args: Vec<Arg>,
         body: Vec<Node>,
         span: Span,
     },
 
-    /// A `\begin{name}...\end{name}` environment
+    /// A `\begin{name}...\end{name}` environment.
     Environment {
         name: String,
         args: Vec<Arg>,
