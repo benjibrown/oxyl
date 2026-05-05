@@ -53,7 +53,7 @@ impl Node {
             Node::ParagraphBreak(s) => *s,
             Node::Command { span, .. } => *span,
             Node::Environment { span, .. } => *span,
-            Node::Group(_, s)
+            Node::Group(_, s) => *s,
         }
     }
 }
@@ -64,10 +64,16 @@ pub enum Arg {
     /// A mandatory argument in braces `{...}`.
     Mandatory(Vec<Node>),
     /// An optional argument in brackets `[...]`
-    Optional(Vec<Node>).
+    Optional(Vec<Node>),
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn text_node_span() {
+        let span = Span::new(0,5);
+        let node = Node::Text("hello".into(), span);
+    }
 }
