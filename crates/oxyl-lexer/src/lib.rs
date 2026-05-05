@@ -24,7 +24,7 @@ impl Span {
     }
 
     /// Merge two spans into one that covers both. The spans do not need to be 
-    /// adajcent, but `self` should come before `other` in the source.
+    /// adjacent, but `self` should come before `other` in the source.
     pub fn merge(self, other: Span) -> Span {
         Span {
             start: self.start.min(other.start),
