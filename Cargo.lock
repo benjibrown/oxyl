@@ -16,3 +16,7 @@ version = "0.1.2"
 [[package]]
 name = "oxyl-lexer"
 version = "0.1.2"
+
+[[package]]
+name = "oxyl-parser"
+version = "0.1.2"

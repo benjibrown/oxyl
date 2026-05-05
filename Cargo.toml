@@ -1,7 +1,7 @@
 [workspace]
 members = [
   "crates/oxyl", "crates/oxyl-diagnostics",
-  "crates/oxyl-lexer",
+  "crates/oxyl-lexer", "crates/oxyl-parser"
 ]
 resolver = "2"
 

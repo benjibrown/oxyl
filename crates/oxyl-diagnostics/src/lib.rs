@@ -16,7 +16,7 @@ impl std::fmt::Display for Severity {
         match self {
             Severity::Error => write!(f, "error"),
             Severity::Warning => write!(f, "warning"),
-            Severity::Note => write!(f,"note"),
+            Severity::Note => write!(f, "note"),
         }
     }
 }
