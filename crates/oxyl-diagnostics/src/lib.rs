@@ -82,7 +82,6 @@ impl From<LexError> for Diagnostic {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,5 +96,19 @@ mod tests {
     fn warning_severity() {
         let d = Diagnostic::warning("W001", "overfull hbox");
         assert_eq!(d.severity, Severity::Warning);
+    }
+
+    #[test]
+    fn lex_error_into_diagnostic() {
+        let e = LexError::UnexpectedEndAfterBackslash { pos: 42 };
+        let d: Diagnostic = e.into();
+        assert_eq!(d.severity, Severity::Error);
+        assert_eq!(d.code, "E010");
+    }
+
+    #[test]
+    fn lex_error_display () {
+        let e = LexError::NonAsciiChar { pos: 5, ch: 'è'};
+        assert!(e.to_string().contains("non-ASCII"));
     }
 }
