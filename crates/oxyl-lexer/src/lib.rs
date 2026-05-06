@@ -234,15 +234,15 @@ impl<'src> Lexer<'src> {
                     let name = self.src[name_start..self.pos].to_owned();
                     self.take_while(|ch| ch == ' ' || ch == '\t');
                     return Ok(Some(Token::new(
-                                TokenKind::ControlSeq(name),
-                                Span::new(start, self.pos),
+                            TokenKind::ControlSeq(name),
+                            Span::new(start, self.pos),
                     )));
                 }
                 Some(sym) => {
                     self.bump();
                     return Ok(Some(Token::new(
-                                TokenKind::Char(sym),
-                                Span::new(start, self.pos),
+                            TokenKind::Char(sym),
+                            Span::new(start, self.pos),
                     )));
                 }
             }
