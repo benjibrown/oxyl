@@ -1,8 +1,10 @@
 // oxyl-lexer 
 
+use oxyl_diagnostics::LexError;
+
 /// A half-open byte range `[start, end]` within a source file.
 ///
-/// Every token will carry one of these so errors can point at the 
+/// Every token carries one of these so errors can point at the 
 /// exact bytes that caused the problem.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
@@ -23,8 +25,8 @@ impl Span {
         self.start == self.end
     }
 
-    /// Merge two spans into one that covers both. The spans do not need to be 
-    /// adjacent, but `self` should come before `other` in the source.
+    /// Merge two spans into one convering both. `self` should come before
+    /// `other` in the source.
     pub fn merge(self, other: Span) -> Span {
         Span {
             start: self.start.min(other.start),
@@ -40,8 +42,6 @@ impl std::fmt::Display for Span {
 }
 
 /// The kind of a single lexical token.
-///
-/// This is a first pass - will add more variants later on.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     /// A control sequence such as `\frac` or `\begin`. Stores the name 
@@ -72,8 +72,7 @@ pub enum TokenKind {
     /// `~` - non-breaking space (active character in plain LaTeX).
     Tilde,
 
-    /// A `%` comment. The stored string is the comment body, not 
-    /// including the `%` or the terminating newline.
+    /// A `%` line comment. Stores the comment body, not the `%` or newline.
     Comment(String),
 
     /// One or more spaces, tabs, or newlines (collapsed into a single token).
@@ -98,7 +97,7 @@ impl Token {
 
 impl std::fmt::Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self{
+        match self {
             TokenKind::ControlSeq(name) => write!(f, "\\{name}"),
             TokenKind::BeginGroup => write!(f, "{{"),
             TokenKind::EndGroup => write!(f, "}}"),
@@ -118,6 +117,28 @@ impl std::fmt::Display for TokenKind {
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} @ {}", self.kind, self.span)
+    }
+}
+
+// --- 
+// LexResult
+// ---- 
+
+/// The result of tokenising a source file.
+///
+/// We collect errors rather than stopping at the first one so the CLI can 
+/// report everything in a single pass.
+#[derive(Debug)] 
+pub struct LexResult {
+    pub tokens: Vec<Token>,
+    /// Any non-fatal errors encountered. The token stream is still usable
+    /// even when this is non-empty.
+    pub errors: Vec<LexError>,
+}
+
+impl LexResult {
+    pub fn has_errors(&self) -> bool {
+        !self.errors.is_empty()
     }
 }
 
