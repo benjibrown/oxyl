@@ -52,7 +52,7 @@ impl std::fmt::Display for Diagnostic {
 
 /// An error produced during lexing.
 ///
-/// Stored inside [LexResult`] so the caller can handle all the erros after 
+/// Stored inside [`LexResult`] so the caller can handle all the errors after 
 /// tokenisation rather than stopping at the first problem.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LexError {
@@ -60,7 +60,7 @@ pub enum LexError {
     UnexpectedEndAfterBackslash { pos: usize },
     /// A UTF-8 character outside the ASCII range was encountered. Full 
     /// Unicode support is planned; for now we record the byte position.
-    NonAsciiChar { pos: usize, ch: char}
+    NonAsciiChar { pos: usize, ch: char},
 }
 
 impl std::fmt::Display for LexError {
