@@ -69,10 +69,16 @@ impl std::fmt::Display for LexError {
             LexError::UnexpectedEndAfterBackslash { pos } => {
                 write!(f, "unexpected end of input after '\\' at byte {pos}")
             }
-            LexError:NonAsciiChar { pos, ch } => {
+            LexError::NonAsciiChar { pos, ch } => {
                 write!(f, "non-ASCII character '{ch}' at byte {pos} (Unicode support coming soon!)")
             }
         }
+    }
+}
+
+impl From<LexError> for Diagnostic {
+    fn from(e: LexError) -> Self {
+        Diagnostic::error("E010", e.to_string())
     }
 }
 
