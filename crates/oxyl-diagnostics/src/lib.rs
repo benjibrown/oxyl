@@ -24,7 +24,7 @@ impl std::fmt::Display for Severity {
 /// A single compiler diagnostic.
 ///
 /// Every diagnostic has a severity, a short code (e.g. "E001"), and a message.
-/// Source locations will be added once the lexer and parses carry span info
+/// Source locations will be added once the lexer and parser carry span info
 /// through to error sites.
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
@@ -49,6 +49,33 @@ impl std::fmt::Display for Diagnostic {
         write!(f, "{} [{}]: {}", self.severity, self.code, self.message)
     }
 }
+
+/// An error produced during lexing.
+///
+/// Stored inside [LexResult`] so the caller can handle all the erros after 
+/// tokenisation rather than stopping at the first problem.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LexError {
+    /// A lone backslash at the very end of the file with nothing after it.
+    UnexpectedEndAfterBackslash { pos: usize },
+    /// A UTF-8 character outside the ASCII range was encountered. Full 
+    /// Unicode support is planned; for now we record the byte position.
+    NonAsciiChar { pos: usize, ch: char}
+}
+
+impl std::fmt::Display for LexError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LexError::UnexpectedEndAfterBackslash { pos } => {
+                write!(f, "unexpected end of input after '\\' at byte {pos}")
+            }
+            LexError:NonAsciiChar { pos, ch } => {
+                write!(f, "non-ASCII character '{ch}' at byte {pos} (Unicode support coming soon!)")
+            }
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
