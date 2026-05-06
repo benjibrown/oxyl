@@ -25,7 +25,7 @@ impl Span {
         self.start == self.end
     }
 
-    /// Merge two spans into one convering both. `self` should come before
+    /// Merge two spans into one covering both. `self` should come before
     /// `other` in the source.
     pub fn merge(self, other: Span) -> Span {
         Span {
@@ -156,15 +156,18 @@ impl<'src> Lexer<'src> {
         Self { src, pos: 0 }
     }
 
-    /// Tokenise the source string and return all tokens.
-    pub fn tokenise(&mut self) -> Vec<Token> {
+    /// Tokenise the entire source. Returns all tokens and any errors found.
+    pub fn tokenise(&mut self) -> LexResult {
         let mut tokens = Vec::new();
+        let mut errors = Vec::new();
         while self.pos < self.src.len() {
-            if let Some(tok) = self.next_token() {
-                tokens.push(tok);
+            match self.next_token() {
+                Ok(Some(tok)) => tokens.push(tok),
+                Ok(None) => {}
+                Err(e) => errors.push(e),
             }
         }
-        tokens
+        LexResult { tokens, errors }
     }
 
     fn peek(&self) -> Option<char> {
@@ -185,47 +188,64 @@ impl<'src> Lexer<'src> {
         &self.src[start..self.pos]
     }
 
-    fn next_token(&mut self) -> Option<Token> {
+    fn next_token(&mut self) -> Result<Option<Token>, LexError> {
         let start = self.pos;
-        let c = self.peek()?;
+        let c = match self.peek() {
+            Some(c) => c,
+            None => return Ok(None),
+        };
 
-        // Line comments: consume to end of line 
+        // Non-ASCII: record an error but still emit a Char so the stream 
+        // stays in sync. Full Unicode handling comes later.
+        if !c.is_ascii() {
+            self.bump();
+            return Err(LexError::NonAsciiChar { pos: start, ch: c });
+        }
+
+        // Line comments.
         if c == '%' {
-            self.bump(); // consume '%'
+            self.bump();
             let body = self.take_while(|ch| ch != '\n').to_owned();
-            // Consume the newline itself so it does not become a Space token.
             if self.peek() == Some('\n') {
                 self.bump();
             }
-            return Some(Token::new(
+            return Ok(Some(Token::new(
                 TokenKind::Comment(body),
                 Span::new(start, self.pos),
-            ));
+            )));
         }
 
-        // Spaces: collapse runs.
+        // Whitespace: collapse runs.
         if c == ' ' || c == '\t' || c == '\n' {
             self.take_while(|ch| ch == ' ' || ch == '\t' || ch == '\n');
-            return Some(Token::new(TokenKind::Space, Span::new(start, self.pos)));
+            return Ok(Some(Token::new(TokenKind::Space, Span::new(start, self.pos))));
         }
 
         // Control sequences.
         if c == '\\' {
             self.bump();
-            if self.peek().map_or(false, |ch| ch.is_ascii_alphabetic()) {
-                let name_start = self.pos;
-                self.take_while(|ch| ch.is_ascii_alphabetic());
-                let name = self.src[name_start..self.pos].to_owned();
-                // TeX skips spaces after a control word.
-                self.take_while(|ch| ch == ' ' || ch == '\t');
-                return Some(Token::new(
-                    TokenKind::ControlSeq(name),
-                    Span::new(start, self.pos),
-                ));
+            match self.peek() {
+                None => {
+                    return Err(LexError::UnexpectedEndAfterBackslash { pos: start });
+                }
+                Some(next) if next.is_ascii_alphabetic() => {
+                    let name_start = self.pos;
+                    self.take_while(|ch| ch.is_ascii_alphabetic());
+                    let name = self.src[name_start..self.pos].to_owned();
+                    self.take_while(|ch| ch == ' ' || ch == '\t');
+                    return Ok(Some(Token::new(
+                                TokenKind::ControlSeq(name),
+                                Span::new(start, self.pos),
+                    )));
+                }
+                Some(sym) => {
+                    self.bump();
+                    return Ok(Some(Token::new(
+                                TokenKind::Char(sym),
+                                Span::new(start, self.pos),
+                    )));
+                }
             }
-            // Backslash followed by a non-letter: treat as a plain char for now.
-            let sym = self.bump().unwrap_or('\\');
-            return Some(Token::new(TokenKind::Char(sym), Span::new(start, self.pos)));
         }
 
         self.bump();
@@ -241,7 +261,7 @@ impl<'src> Lexer<'src> {
             '~' => TokenKind::Tilde,
             other => TokenKind::Char(other),
         };
-        Some(Token::new(kind, span))
+        Ok(Some(Token::new(kind, span)))
     }
 }
 
@@ -252,9 +272,13 @@ impl<'src> Lexer<'src> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    
+    fn lex(src: &str) -> LexResult {
+        Lexer::new(src).tokenise()
+    }
 
     fn kinds(src: &str) -> Vec<TokenKind> {
-        Lexer::new(src).tokenise().into_iter().map(|t| t.kind).collect()
+        lex(src).tokens.into_iter().map(|t| t.kind).collect()
     }
 
     #[test]

@@ -11,7 +11,7 @@ pub struct Document {
     /// Everything before `\begin{document}`.
     pub preamble: Vec<Node>,
     /// The body of the document.
-    pub body: Vec<Node>
+    pub body: Vec<Node>,
 }
 
 /// A single node in the LaTeX AST.
