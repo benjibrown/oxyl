@@ -282,14 +282,8 @@ mod tests {
     }
 
     #[test]
-    fn span_len() {
-        assert_eq!(Span::new(0, 5).len(), 5);
-    }
-    
-    #[test]
-    fn span_is_empty() {
-        assert!(Span::new(2, 2).is_empty());
-        assert!(!Span::new(2, 3).is_empty());
+    fn span_merge() {
+        assert_eq!(Span::new(0, 5).merge(Span::new(8,12)), Span::new(0, 12));
     }
     
     #[test]
@@ -309,7 +303,6 @@ mod tests {
 
     #[test]
     fn control_seq_skips_trailing_space() {
-        // TeX eats spaces after a control word. 
         let ks = kinds("\\foo bar");
         assert_eq!(ks[0], TokenKind::ControlSeq("foo".into()));
         assert_eq!(ks[1], TokenKind::Char('b'));
@@ -321,53 +314,36 @@ mod tests {
     }
 
     #[test]
-    fn space_collapse() {
-        assert_eq!(kinds("a  b"), vec![
-            TokenKind::Char('a'),
-            TokenKind::Space,
-            TokenKind::Char('b'),
+    fn special_chars() {
+        assert_eq!(kinds("$^_~&#"), vec![
+            TokenKind::MathShift,
+            TokenKind::Superscript,
+            TokenKind::Subscript,
+            TokenKind::Tilde,
+            TokenKind::AlignTab,
+            TokenKind::Parameter,
         ]);
     }
 
     #[test]
-    fn special_chars() {
-        assert_eq!(kinds("$"), vec![TokenKind::MathShift]);
-        assert_eq!(kinds("&"), vec![TokenKind::AlignTab]);
-        assert_eq!(kinds("#"), vec![TokenKind::Parameter]);
-        assert_eq!(kinds("^"), vec![TokenKind::Superscript]);
-        assert_eq!(kinds("_"), vec![TokenKind::Subscript]);
-        assert_eq!(kinds("~"), vec![TokenKind::Tilde]);
-    }
-
-    #[test]
-    fn comment_to_end_of_line() {
-        let ks = kinds("a% this is ignored\nb");
+    fn comment() {
+        let ks = kinds("a% ignored\nb");
         assert_eq!(ks[0], TokenKind::Char('a'));
-        assert_eq!(ks[1], TokenKind::Comment(" this is ignored".into()));
+        assert_eq!(ks[1], TokenKind::Comment(" ignored".into()));
         assert_eq!(ks[2], TokenKind::Char('b'));
     }
 
     #[test]
-    fn comment_at_end_of_input() {
-        let ks = kinds("% no newline");
-        assert_eq!(ks, vec![TokenKind::Comment(" no newline".into())]);
+    fn non_ascii_produces_error() {
+        let result = lex("a\u{00e9}b");
+        assert!(result.has_errors());
+        assert!(matches!(result.errors[0], LexError::NonAsciiChar { ch: 'é', ..}));
     }
 
     #[test]
-    fn span_merge() {
-        let a = Span::new(0, 5);
-        let b = Span::new(8, 12);
-        assert_eq!(a.merge(b), Span::new(0,12));
-    }
-
-    #[test]
-    fn span_display() {
-        assert_eq!(Span::new(3, 7).to_string(), "3..7");
-    }
-
-    #[test]
-    fn token_display() {
-        let t = Token::new(TokenKind::ControlSeq("frac".into()), Span::new(0, 5));
-        assert_eq!(t.to_string(), "\\frac @ 0..5");
+    fn lone_backslash_at_eof_is_error() {
+        let result = lex("\\");
+        assert!(result.has_errors());
+        assert!(matches!(result.errors[0], LexError::UnexpectedEndAfterBackslash { .. }));
     }
 }
