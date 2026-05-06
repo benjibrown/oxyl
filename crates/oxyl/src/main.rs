@@ -1,3 +1,4 @@
+use oxyl_diagnostics::Diagnostic;
 use oxyl_lexer::Lexer;
 
 fn main() {
@@ -16,9 +17,20 @@ fn main() {
         }
     };
 
-    let tokens = Lexer::new(&src).tokenise();
-    println!("{} token(s) in {path}", tokens.len());
-    for tok in &tokens {
+    let result = Lexer::new(&src).tokenise();
+
+    // Print any lex errors before showing tokens. 
+    for e in &result.errors {
+        let d: Diagnostic = e.clone().into();
+        eprintln!("{d}");
+    }
+
+    println!("{} token(s) in {path}", result.tokens.len());
+    for tok in &result.tokens {
         println!("  {tok}");
+    }
+
+    if result.has_errors() {
+        std::process::exit(1);
     }
 }
