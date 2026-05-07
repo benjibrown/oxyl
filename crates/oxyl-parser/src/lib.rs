@@ -1,28 +1,34 @@
 // oxyl-parser
 // 
-// AST node types for oxyl. 
-// TODO - add actual parsing logic :)
+// Converts a token stream from oxyl-lexer into an AST.
+//
+// Currently will only handle plain text runs 
+// and paragrah breaks. Everything else will be left as a Char token for now 
+// and collected into text. 
+// TODO - peel off commands, groups, environments, math (pefired this todo lol as ik i wont do it)
 
-use oxyl_lexer::Span;
+use oxyl_lexer::{Span, Token, TokenKind};
+
+// --- 
+// AST Types 
+//
 
 /// The root of a parsed LaTeX document.
+///
+/// For now we do not distinguish preamble from body - everything lands in 
+/// `body`. Will add that split when handling for `\begin{document}` is done.
 #[derive(Debug, Clone)]
 pub struct Document {
-    /// Everything before `\begin{document}`.
-    pub preamble: Vec<Node>,
-    /// The body of the document.
     pub body: Vec<Node>,
 }
 
 /// A single node in the LaTeX AST.
-///
-/// More variants will be added as the parser is built out.
 #[derive(Debug, Clone)]
 pub enum Node {
     /// A run of plain text characters
     Text(String, Span),
 
-    /// A paragraph break (blank line in the source)
+    /// A blank line in the source - signals a paragraph break.
     ParagraphBreak(Span),
 
     /// A LaTeX command and its arguments, e.g. `\textbf{hello}`.
@@ -30,30 +36,19 @@ pub enum Node {
         /// Name without the leading backslash, e.g. `"textbf"`.
         name: String ,
         args: Vec<Arg>,
-        body: Vec<Node>,
         span: Span,
     },
 
-    /// A `\begin{name}...\end{name}` environment.
-    Environment {
-        name: String,
-        args: Vec<Arg>,
-        body: Vec<Node>,
-        span: Span,
-    },
-
-    /// A braced group `{...}` that is not a command argument.
+    /// A braced group `{...}`.
     Group(Vec<Node>, Span),
 }
 
 impl Node {
-    /// The source span of this node.
     pub fn span(&self) -> Span {
         match self {
             Node::Text(_,s) => *s,
             Node::ParagraphBreak(s) => *s,
             Node::Command { span, .. } => *span,
-            Node::Environment { span, .. } => *span,
             Node::Group(_, s) => *s,
         }
     }
@@ -62,9 +57,7 @@ impl Node {
 /// A single argument to a command or environment 
 #[derive(Debug, Clone)]
 pub enum Arg {
-    /// A mandatory argument in braces `{...}`.
     Mandatory(Vec<Node>),
-    /// An optional argument in brackets `[...]`
     Optional(Vec<Node>),
 }
 
