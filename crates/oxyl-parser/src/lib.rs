@@ -1,12 +1,12 @@
 // oxyl-parser
-// 
 // Converts a token stream from oxyl-lexer into an AST.
-//
 // Currently will only handle plain text runs 
 // and paragrah breaks. Everything else will be left as a Char token for now 
 // and collected into text. 
-// TODO - peel off commands, groups, environments, math (pefired this todo lol as ik i wont do it)
+// Will now support Paragraph Break nodes and Node::Group { ... } pairs 
+// aswell as basic Command stuff (no arguments yet)
 
+use oxyl_diagnostics::{Diagnostic};
 use oxyl_lexer::{Span, Token, TokenKind};
 
 // --- 
@@ -62,87 +62,125 @@ pub enum Arg {
 }
 
 // --- 
+// Parser Result 
+//
+
+/// Returned by [`Parser::parse`]. The document is always produced; errors 
+/// are collected alongside it so the caller sees everything at once.
+#[derive(Debug)]
+pub struct ParseResult {
+    pub document: Document,
+    pub errors: Vec<Diagnostic>,
+}
+
+// --- 
 // Parser 
 // --- 
 
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    errors: Vec<Diagnostic>,
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, pos: 0 }
+        Self { tokens, pos: 0, errors: Vec::new() }
     }
     
-    /// Parse the token stream into a [`Document`].
-    pub fn parse(mut self) -> Document {
-        let body = self.parse_nodes();
-        Document { body }
+    /// Parse the token stream.
+    pub fn parse(mut self) -> ParseResult {
+        let body = self.parse_nodes(None);
+        ParseResult {
+            document: Document { body },
+            errors: self.errors,
+        }
     }
 
     fn peek(&self) -> Option<&Token> {
         self.tokens.get(self.pos)
     }
 
-    fn bump(&mut self) -> Option<&Token> {
-        let tok = self.tokens.get(self.pos)?;
-        self.pos += 1;
-        Some(tok)
+    fn bump(&mut self) -> Option<Token> {
+        if self.pos < self.tokens.len() {
+            let tok = self.tokens[self.pos].clone();
+            self.pos += 1;
+            Some(tok)
+        } else {
+            None
+        }
     }
 
-    /// Parse nodes until we run out of tokens (or hit a stop condition that
-    /// inner callers will add later).
-    fn parse_nodes(&mut self) -> Vec<Node> {
+    /// Parse nodes until the token stream ends or `stop` matches. 
+    ///
+    /// `stop` is used by the group parser to halt at `}`.
+    fn parse_nodes(&mut self, stop: Option<&TokenKind>) -> Vec<Node> {
         let mut nodes: Vec<Node> = Vec::new();
+        
+        loop {
+            match self.peek() {
+                None => break,
+                Some(tok) if stop.map_or(false, |s| &tok.kind == s) => break,
+                _ => {}
+            }
 
-        while let Some(tok) = self.peek() {
-            match &tok.kind {
-                // Two ore more newlines in a row come through as a Space that 
-                // contains `\n`. The lexer collapses all whitespace, so we 
-                // detect paragraph breaks by checking for the Space token that 
-                // immediately follows another Space or is at the start. But for
-                // now, rely on a simpler signal - the lexer already emits a s 
-                // single Space for all runs, so we just collect text and 
-                // treat Space as a space character inside text runs.
-                // long ahh comment - putting here otherwise ill forget what i wrote
-                // Will add paragraph breaks later on when we 
-                // give the lexer a dedicated ParagraphBreak token.
-                TokenKind::Space => {
-                    let span = tok.span;
-                    self.bump();
-                    // Append a space to the previous Text node if there is 
-                    // one, otherwise start a new one.
-                    match nodes.last_mut() {
-                        Some(Node::Text(s, existing_span)) => {
-                            s.push(' ');
-                            *existing_span = existing_span.merge(span);
-                        }
-                        _ => nodes.push(Node::Text(" ".into(), span)),
-                    }
-                }
-                
+            let tok = self.bump().unwrap();
+
+            match tok.kind {
                 TokenKind::Char(c) => {
-                    let c = *c;
-                    let span = tok.span;
-                    self.bump();
-                    match nodes.last_mut() {
-                        Some(Node::Text(s, existing_span)) => {
-                            s.push(c);
-                            *existing_span = existing_span.merge(span);
-                        }
-                        _ => nodes.push(Node::Text(c.to_string(), span)),
+                    self.push_char(&mut nodes, c, tok.span);
+                }
+
+                TokenKind:: Space => {
+                    self.push_char(&mut nodes, ' ', tok.span);
+                }
+
+                TokenKind::ParagraphBreak => {
+                    nodes.push(Node::ParagraphBreak(tok.span));
+                }
+
+                TokenKind::ControlSeq(name) => {
+                    // No argument parsing yet - soon I promise. 
+                    nodes.push(Node::Command {
+                        span: tok.span,
+                        name, 
+                        args: vec![],
+                    });
+                }
+
+                TokenKind::BeginGroup => {
+                    let open_span = tok.span;
+                    let children = self.parse_nodes(Some(&TokenKind::EndGroup));
+                    if self.peek().map(|t| &t.kind) == Some(&TokenKind::EndGroup) {
+                        let close = self.bump().unwrap();
+                        let span = open_span.merge(close.span);
+                        nodes.push(Node::Group(children, span));
+                    } else {
+                        // Unclosed group - record the error, keep what we parsed.
+                        self.errors.push(Diagnostic::error(
+                                "E020",
+                                format!("unclosed '{{' at {open_span}"),
+                        ));
+                        nodes.push(Node::Group(children, open_span));
                     }
                 }
 
                 // Everything else is left unhandled for now so skip it.
-                _ => {
-                    self.bump();
-                }
+                _ => {}
             }
         }
 
         nodes
+    }
+
+    fn push_char(&self, nodes: &mut Vec<Node>, c: char, span: Span) {
+        match nodes.last_mut() {
+            Some(Node::Text(s, existing)) => {
+                s.push(c);
+                *existing = existing.merge(span);
+            }
+            _ => nodes.push(Node::Text(c.to_string(), span)),
+        }
     }
 }
 
