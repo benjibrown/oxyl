@@ -172,6 +172,22 @@ mod tests {
         assert_eq!(doc.body.len(), 1);
         assert!(matches!(&doc.body[0], Node::Text(s, _) if s == "hello"));
     }
+    
+    #[test]
+    fn spaces_merged_into_text() {
+        let doc = parse("hi there");
+        assert_eq!(doc.body.len(), 1);
+        assert!(matches!(&doc.body[0], Node::Text(s, _) if s == "hi there"));
+    }
 
-    // TODO - add tests for spaces merged into text and node span covers full run !!
+    #[test]
+    fn text_node_span_covers_full_run() {
+        let doc = parse("abc");
+        if let Node::Text(_, span) = &doc.body[0] {
+            assert_eq!(span.start, 0);
+            assert_eq!(span.end, 3);
+        } else {
+            panic!("expected Text node");
+        }
+    }
 }
