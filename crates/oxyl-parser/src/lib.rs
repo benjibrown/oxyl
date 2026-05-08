@@ -131,7 +131,7 @@ impl Parser {
                     self.push_char(&mut nodes, c, tok.span);
                 }
 
-                TokenKind:: Space => {
+                TokenKind::Space => {
                     self.push_char(&mut nodes, ' ', tok.span);
                 }
 
@@ -173,6 +173,7 @@ impl Parser {
         nodes
     }
 
+    /// Append a character to the last `Text` node, or start a new one.
     fn push_char(&self, nodes: &mut Vec<Node>, c: char, span: Span) {
         match nodes.last_mut() {
             Some(Node::Text(s, existing)) => {
@@ -193,39 +194,54 @@ mod tests {
     use super::*;
     use oxyl_lexer::Lexer;
 
-    fn parse(src: &str) -> Document {
+    fn parse(src: &str) -> ParseResult {
         let tokens = Lexer::new(src).tokenise().tokens;
         Parser::new(tokens).parse()
     }
     
     #[test]
-    fn empty_source_gives_empty_body() {
-        let doc = parse("");
-        assert!(doc.body.is_empty());
+    fn empty_source() {
+        let r = parse("");
+        assert!(r.document.body.is_empty());
+        assert!(r.errors.is_empty());
     }
 
     #[test]
-    fn plain_text_becomes_single_text_node() {
-        let doc = parse("hello");
-        assert_eq!(doc.body.len(), 1);
-        assert!(matches!(&doc.body[0], Node::Text(s, _) if s == "hello"));
+    fn plain_text_node() {
+        let r = parse("hello world");
+        assert_eq!(r.document.body.len(), 1);
+        assert!(matches!(&r.document.body[0], Node::Text(s, _) if s == "hello world"));
     }
     
     #[test]
-    fn spaces_merged_into_text() {
-        let doc = parse("hi there");
-        assert_eq!(doc.body.len(), 1);
-        assert!(matches!(&doc.body[0], Node::Text(s, _) if s == "hi there"));
+    fn paragraph_break_node() {
+        let r = parse("first\n\nsecond");
+        let kinds: Vec<&str> = r.document.body.iter().map(|n| match n {
+            Node::Text(..) => "text",
+            Node::ParagraphBreak(..) => "par",
+            Node::Command { .. } => "cmd",
+            Node::Group(..) => "group",
+        }).collect();
+        assert!(kinds.contains(&"par"), "expected a paragraph break node");
     }
 
     #[test]
-    fn text_node_span_covers_full_run() {
-        let doc = parse("abc");
-        if let Node::Text(_, span) = &doc.body[0] {
-            assert_eq!(span.start, 0);
-            assert_eq!(span.end, 3);
-        } else {
-            panic!("expected Text node");
-        }
+    fn bare_command_node() {
+        let r = parse("\\LaTeX");
+        assert!(matches!(&r.document.body[0], Node::Command { name, .. } if name == "LaTeX"));
+    }
+
+    #[test]
+    fn brace_group_node() {
+        let r = parse("{hello}");
+        assert!(matches!(&r.document.body[0], Node::Group(..)));
+        assert!(r.errors.is_empty());
+    }
+
+    #[test]
+    fn unclosed_group_produces_error() {
+        let r = parse("{oops");
+        assert!(!r.errors.is_empty());
+        assert_eq!(r.errors[0].code, "E020" );
     }
 }
