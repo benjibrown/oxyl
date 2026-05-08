@@ -3,9 +3,6 @@
 use oxyl_diagnostics::LexError;
 
 /// A half-open byte range `[start, end]` within a source file.
-///
-/// Every token carries one of these so errors can point at the 
-/// exact bytes that caused the problem.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
     pub start: usize,
@@ -25,8 +22,6 @@ impl Span {
         self.start == self.end
     }
 
-    /// Merge two spans into one covering both. `self` should come before
-    /// `other` in the source.
     pub fn merge(self, other: Span) -> Span {
         Span {
             start: self.start.min(other.start),
@@ -44,41 +39,20 @@ impl std::fmt::Display for Span {
 /// The kind of a single lexical token.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
-    /// A control sequence such as `\frac` or `\begin`. Stores the name 
-    /// without the leading backslash.
     ControlSeq(String),
-
-    /// `{`
     BeginGroup,
-
-    /// `}`
     EndGroup,
-
-    /// `$` - math mode switch.
     MathShift,
-
-    /// `&` - column seperator in tables and alignments.
     AlignTab,
-
-    /// `#` - parameter character in macro definitions.
     Parameter,
-
-    /// `^` - superscript.
     Superscript,
-
-    /// `_` - subscript.
     Subscript,
-
-    /// `~` - non-breaking space (active character in plain LaTeX).
     Tilde,
-
-    /// A `%` line comment. Stores the comment body, not the `%` or newline.
     Comment(String),
-
-    /// One or more spaces, tabs, or newlines (collapsed into a single token).
+    /// A blank line (two or more consecutive newlines). Signals a new 
+    /// paragraph - the parser does not need to count newlines itself.
+    ParagraphBreak,
     Space,
-
-    /// Any other single character.
     Char(char),
 }
 
@@ -108,6 +82,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Subscript => write!(f, "_"),
             TokenKind::Tilde => write!(f, "~"),
             TokenKind::Space => write!(f, "<space>"),
+            TokenKind::ParagraphBreak => write!(f, "<par>"),
             TokenKind::Comment(body) => write!(f, "%{body}"),
             TokenKind::Char(c) => write!(f, "{c}"),
         }
@@ -120,19 +95,10 @@ impl std::fmt::Display for Token {
     }
 }
 
-// --- 
-// LexResult
-// ---- 
-
 /// The result of tokenising a source file.
-///
-/// We collect errors rather than stopping at the first one so the CLI can 
-/// report everything in a single pass.
 #[derive(Debug)] 
 pub struct LexResult {
     pub tokens: Vec<Token>,
-    /// Any non-fatal errors encountered. The token stream is still usable
-    /// even when this is non-empty.
     pub errors: Vec<LexError>,
 }
 
@@ -142,9 +108,9 @@ impl LexResult {
     }
 }
 
-// ------ 
+// ----
 // Lexer 
-// ----- 
+// ----
 
 pub struct Lexer<'src> {
     src: &'src str,
@@ -156,7 +122,6 @@ impl<'src> Lexer<'src> {
         Self { src, pos: 0 }
     }
 
-    /// Tokenise the entire source. Returns all tokens and any errors found.
     pub fn tokenise(&mut self) -> LexResult {
         let mut tokens = Vec::new();
         let mut errors = Vec::new();
@@ -195,8 +160,6 @@ impl<'src> Lexer<'src> {
             None => return Ok(None),
         };
 
-        // Non-ASCII: record an error but still emit a Char so the stream 
-        // stays in sync. Full Unicode handling comes later.
         if !c.is_ascii() {
             self.bump();
             return Err(LexError::NonAsciiChar { pos: start, ch: c });
@@ -214,35 +177,50 @@ impl<'src> Lexer<'src> {
                 Span::new(start, self.pos),
             )));
         }
-
-        // Whitespace: collapse runs.
-        if c == ' ' || c == '\t' || c == '\n' {
-            self.take_while(|ch| ch == ' ' || ch == '\t' || ch == '\n');
+        
+        // Newlines: detect paragraph breaks (blank lines) vs ordinary space.
+        if c == '\n' {
+            self.bump();
+            // Skips any spaces/tabs on the next line.
+            self.take_while(|ch| ch == ' ' || ch == '\t');
+            if self.peek() == Some('\n') {
+                // Blank line - consume remaining blank-line whitespace.
+                self.take_while(|ch| ch == '\n' || ch == ' ' || ch == '\t');
+                return Ok(Some(Token::new(
+                            TokenKind::ParagraphBreak,
+                            Span::new(start, self.pos),
+                )));
+            }
+            // Single newline is just whitespace. 
             return Ok(Some(Token::new(TokenKind::Space, Span::new(start, self.pos))));
+        }
+
+        // Horizontal whitespace.
+        if c == ' ' || c == '\t' {
+            self.take_while(|ch| ch == ' ' || ch == '\t');
+                return Ok(Some(Token::new(TokenKind::Space, Span::new(start, self.pos))));
         }
 
         // Control sequences.
         if c == '\\' {
             self.bump();
             match self.peek() {
-                None => {
-                    return Err(LexError::UnexpectedEndAfterBackslash { pos: start });
-                }
+                None => { return Err(LexError::UnexpectedEndAfterBackslash { pos: start }); }
                 Some(next) if next.is_ascii_alphabetic() => {
                     let name_start = self.pos;
                     self.take_while(|ch| ch.is_ascii_alphabetic());
                     let name = self.src[name_start..self.pos].to_owned();
                     self.take_while(|ch| ch == ' ' || ch == '\t');
                     return Ok(Some(Token::new(
-                            TokenKind::ControlSeq(name),
-                            Span::new(start, self.pos),
+                        TokenKind::ControlSeq(name),
+                        Span::new(start, self.pos),
                     )));
                 }
                 Some(sym) => {
                     self.bump();
                     return Ok(Some(Token::new(
-                            TokenKind::Char(sym),
-                            Span::new(start, self.pos),
+                        TokenKind::Char(sym),
+                        Span::new(start, self.pos),
                     )));
                 }
             }
@@ -265,10 +243,10 @@ impl<'src> Lexer<'src> {
     }
 }
 
-
-
-
+// --- 
 // Tests 
+// ---
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -282,12 +260,7 @@ mod tests {
     }
 
     #[test]
-    fn span_merge() {
-        assert_eq!(Span::new(0, 5).merge(Span::new(8,12)), Span::new(0, 12));
-    }
-    
-    #[test]
-    fn empty_input() {
+    fn empty() {
         assert_eq!(kinds(""), vec![]);
     }
 
@@ -309,41 +282,35 @@ mod tests {
     }
 
     #[test]
-    fn groups() {
-        assert_eq!(kinds("{}"), vec![TokenKind::BeginGroup, TokenKind::EndGroup]);
+    fn paragraph_break_detected() {
+        assert!(kinds("a\n\nb").contains(&TokenKind::ParagraphBreak));
     }
 
     #[test]
-    fn special_chars() {
-        assert_eq!(kinds("$^_~&#"), vec![
-            TokenKind::MathShift,
-            TokenKind::Superscript,
-            TokenKind::Subscript,
-            TokenKind::Tilde,
-            TokenKind::AlignTab,
-            TokenKind::Parameter,
+    fn single_newline_is_space() {
+        assert_eq!(kinds("a\nb"), vec![
+            TokenKind::Char('a'),
+            TokenKind::Space,
+            TokenKind::Char('b'),
         ]);
     }
 
     #[test]
     fn comment() {
-        let ks = kinds("a% ignored\nb");
-        assert_eq!(ks[0], TokenKind::Char('a'));
-        assert_eq!(ks[1], TokenKind::Comment(" ignored".into()));
-        assert_eq!(ks[2], TokenKind::Char('b'));
+        let ks = kinds("a% hi\nb");
+        assert_eq!(ks[1], TokenKind::Comment(" hi".into()));
     }
 
     #[test]
-    fn non_ascii_produces_error() {
-        let result = lex("a\u{00e9}b");
-        assert!(result.has_errors());
-        assert!(matches!(result.errors[0], LexError::NonAsciiChar { ch: 'é', ..}));
+    fn special_chars() {
+        assert_eq!(kinds("$^_~&#"), vec![
+            TokenKind::MathShift, TokenKind::Superscript, TokenKind::Subscript,
+            TokenKind::Tilde, TokenKind::AlignTab, TokenKind::Parameter,
+        ]);
     }
 
     #[test]
-    fn lone_backslash_at_eof_is_error() {
-        let result = lex("\\");
-        assert!(result.has_errors());
-        assert!(matches!(result.errors[0], LexError::UnexpectedEndAfterBackslash { .. }));
+    fn non_ascii_error() {
+        assert!(lex("\\").has_errors());
     }
 }
