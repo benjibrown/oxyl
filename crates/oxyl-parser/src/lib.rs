@@ -247,7 +247,7 @@ mod tests {
                 return (name.clone(), args.clone());
             }
         }
-        panic!("no command found in: {src}")
+        panic!("no command found in: {src}");
     }
 
     #[test]
@@ -320,6 +320,6 @@ mod tests {
             if let Arg::Mandatory(inner) = &args[0] {
             assert!(matches!(&inner[0], Node::Command { name, .. } if name == "inner"));
             } else { panic!("expected mandatory arg"); }
-    } else { panic!("expected command"); }
+        } else { panic!("expected command"); }
     }
 }
