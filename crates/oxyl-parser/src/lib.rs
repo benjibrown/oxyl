@@ -146,8 +146,7 @@ impl Parser {
                     let full_span = args.last()
                         .and_then(|a| match a {
                             Arg::Mandatory(children) => children.last().map(|n| n.span()),
-                            Arg::Optional(children) => children.last().map(|n| n.span()),
-                            
+                            Arg::Optional(children) => children.last().map(|n| n.span()), 
                         })
                         .map(|s| cmd_span.merge(s))
                         .unwrap_or(cmd_span);
@@ -157,10 +156,9 @@ impl Parser {
                 TokenKind::BeginGroup => {
                     let open_span = tok.span;
                     let children = self.parse_nodes(Some(&TokenKind::EndGroup));
-                    if self.peek().map(|t| &t.kind) == Some(&TokenKind::EndGroup) {
+                    if self.peek_kind() == Some(&TokenKind::EndGroup) {
                         let close = self.bump().unwrap();
-                        let span = open_span.merge(close.span);
-                        nodes.push(Node::Group(children, span));
+                        nodes.push(Node::Group(children, open_span.merge(close.span)));
                     } else {
                         // Unclosed group - record the error, keep what we parsed.
                         self.errors.push(Diagnostic::error(
