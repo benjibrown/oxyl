@@ -205,7 +205,7 @@ impl<'src> Lexer<'src> {
         if c == '\\' {
             self.bump();
             match self.peek() {
-                None => { return Err(LexError::UnexpectedEndAfterBackslash { pos: start }) },
+                None => return Err(LexError::UnexpectedEndAfterBackslash { pos: start }),
                 Some(next) if next.is_ascii_alphabetic() => {
                     let name_start = self.pos;
                     self.take_while(|ch| ch.is_ascii_alphabetic());
@@ -311,11 +311,11 @@ mod tests {
 
     #[test]
     fn non_ascii_error() {
-        assert!(lex("\\").has_errors());
+        assert!(lex("é").has_errors());
     }
 
     #[test]
-    fn lone_backslash_error () {
+    fn lone_backslash_error() {
         assert!(lex("\\").has_errors());
     }
 }
