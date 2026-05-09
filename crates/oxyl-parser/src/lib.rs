@@ -239,6 +239,32 @@ mod tests {
         let tokens = Lexer::new(src).tokenise().tokens;
         Parser::new(tokens).parse()
     }
+
+    fn first_command(src: &str) -> (String, Vec<Arg>) {
+        let r = parse(src);
+        for node in &r.document.body {
+            if let Node::Command { name, args, .. } = node {
+                return (name.clone(), args.clone());
+            }
+        }
+        panic!("no command found in: {src}")
+    }
+
+    #[test]
+    fn command_no_args() {
+        let (name, args) = first_command("\\LaTeX");
+        assert_eq!(name, "LaTeX");
+        assert!(args.is_empty());
+    }
+
+    #[test]
+    fn command_one_mandatory_arg() {
+        let (name, args) = first_command("\\textbf{hello}");
+        assert_eq!(name, "texbf");
+        assert_eq!(args.len(), 1);
+        assert!(matches!(&args[0], Arg::Mandatory(children)
+                if matches!(&children[0], Node::Text(s, _) if s == "hello")));
+    }
     
     #[test]
     fn empty_source() {
