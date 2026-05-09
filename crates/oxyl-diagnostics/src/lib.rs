@@ -78,11 +78,28 @@ impl Diagnostic {
             source_hint: None,
         }
     }
+
+    pub fn with_span(mut self, span: DiagSpan) -> Self {
+        self.span = Some(span);
+        self
+    }
+
+    pub fn with_source_hint(mut self, hint: impl Into<String>) -> Self {
+        self.source_hint = Some(hint.into());
+        self 
+    }
 }
 
 impl std::fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} [{}]: {}", self.severity, self.code, self.message)
+        write!(f, "{} [{}]: {}", self.severity, self.code, self.message)?;
+        if let Some(span) = &self.span {
+            write!(f, " (at {span})")?;
+        }
+        if let Some(hint) = &self.source_hint {
+            write!(f, "\n  |  {hint}")?;
+        }
+        Ok(())
     }
 }
 
@@ -96,7 +113,7 @@ pub enum LexError {
     UnexpectedEndAfterBackslash { pos: usize },
     /// A UTF-8 character outside the ASCII range was encountered. Full 
     /// Unicode support is planned; for now we record the byte position.
-    NonAsciiChar { pos: usize, ch: char},
+    NonAsciiChar { pos: usize, ch: char },
 }
 
 impl std::fmt::Display for LexError {
@@ -114,7 +131,11 @@ impl std::fmt::Display for LexError {
 
 impl From<LexError> for Diagnostic {
     fn from(e: LexError) -> Self {
-        Diagnostic::error("E010", e.to_string())
+        let span = match e {
+            LexError::UnexpectedEndAfterBackslash { pos } => DiagSpan::new(pos, pos + 1),
+            LexError::NonAsciiChar {pos, .. } => DiagSpan::new(pos, pos + 1),
+        };
+        Diagnostic::error("E010", e.to_string()).with_span(span)
     }
 }
 
