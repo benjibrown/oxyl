@@ -73,8 +73,8 @@ impl Diagnostic {
         Self { 
             severity: Severity::Warning,
             code,
-            message: message.into() ,
-            span: None ,
+            message: message.into(),
+            span: None,
             source_hint: None,
         }
     }
@@ -97,7 +97,7 @@ impl std::fmt::Display for Diagnostic {
             write!(f, " (at {span})")?;
         }
         if let Some(hint) = &self.source_hint {
-            write!(f, "\n  |  {hint}")?;
+            write!(f, "\n  | {hint}")?;
         }
         Ok(())
     }
