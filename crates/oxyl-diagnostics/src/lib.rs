@@ -21,26 +21,62 @@ impl std::fmt::Display for Severity {
     }
 }
 
-/// A single compiler diagnostic.
+/// A byte range used to point at source text in a diagnostic
 ///
 /// Every diagnostic has a severity, a short code (e.g. "E001"), and a message.
-/// Source locations will be added once the lexer and parser carry span info
-/// through to error sites.
+/// Below - mirrors `Span` in oxyl-lexer but lives here so that the diagnostics 
+/// stay independent of the lexer crate. Will keep the two types in sync 
+/// manually for now; will unify when the crate graph is refactored,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DiagSpan {
+    pub start: usize,
+    pub end: usize,
+}
+
+impl DiagSpan {
+    pub fn new(start: usize, end: usize) -> Self {
+        Self { start, end }
+    }
+}
+
+impl std::fmt::Display for DiagSpan {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}..{}", self.start, self.end)
+    }
+}
+
+/// A single compiler diagnostic with an optional source location.
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
     pub severity: Severity,
     /// Short alphanumeric code, e.g. "E001".
     pub code: &'static str,
     pub message: String,
+    /// Byte range in the source file, if known.
+    pub span: Option<DiagSpan>,
+    /// A short extract of the source shown below the message, if provided.
+    pub source_hint: Option<String>,
 }
 
 impl Diagnostic {
     pub fn error(code: &'static str, message: impl Into<String>) -> Self {
-        Self { severity: Severity::Error, code, message: message.into() }
+        Self { 
+            severity: Severity::Error, 
+            code, 
+            message: message.into(),
+            span: None,
+            source_hint: None,
+        }
     }
 
     pub fn warning(code: &'static str, message: impl Into<String>) -> Self {
-        Self { severity: Severity::Warning, code, message: message.into() }
+        Self { 
+            severity: Severity::Warning,
+            code,
+            message: message.into() ,
+            span: None ,
+            source_hint: None,
+        }
     }
 }
 
