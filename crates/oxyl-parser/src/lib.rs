@@ -3,10 +3,13 @@
 // Currently will only handle plain text runs 
 // and paragrah breaks. Everything else will be left as a Char token for now 
 // and collected into text. 
-// Will now support Paragraph Break nodes and Node::Group { ... } pairs 
-// aswell as basic Command stuff (no arguments yet)
+// Currently working on support for mandatory brace argument parsing 
+// After a \command the parser greedily consumes any immediately following 
+// { ... } groups. 
+// This should cover most common patterns like \frac{a}{b} etc.
 
-use oxyl_diagnostics::{Diagnostic};
+
+use oxyl_diagnostics::Diagnostic;
 use oxyl_lexer::{Span, Token, TokenKind};
 
 // --- 
@@ -101,6 +104,10 @@ impl Parser {
         self.tokens.get(self.pos)
     }
 
+    fn peek_kind(&self) -> Option<&TokenKind> {
+        self.peek().map(|t| &t.kind)
+    }
+
     fn bump(&mut self) -> Option<Token> {
         if self.pos < self.tokens.len() {
             let tok = self.tokens[self.pos].clone();
@@ -127,25 +134,24 @@ impl Parser {
             let tok = self.bump().unwrap();
 
             match tok.kind {
-                TokenKind::Char(c) => {
-                    self.push_char(&mut nodes, c, tok.span);
-                }
+                TokenKind::Char(c) => self.push_char(&mut nodes, c, tok.span),
+                TokenKind::Space => self.push_char(&mut nodes, ' ', tok.span),
 
-                TokenKind::Space => {
-                    self.push_char(&mut nodes, ' ', tok.span);
-                }
-
-                TokenKind::ParagraphBreak => {
-                    nodes.push(Node::ParagraphBreak(tok.span));
-                }
+                TokenKind::ParagraphBreak => nodes.push(Node::ParagraphBreak(tok.span)),
 
                 TokenKind::ControlSeq(name) => {
-                    // No argument parsing yet - soon I promise. 
-                    nodes.push(Node::Command {
-                        span: tok.span,
-                        name, 
-                        args: vec![],
-                    });
+                    let cmd_span = tok.span; 
+                    let args = self.parse_mandatory_args();
+                    // Extend the span to cover the last argument. 
+                    let full_span = args.last()
+                        .and_then(|a| match a {
+                            Arg::Mandatory(children) => children.last().map(|n| n.span()),
+                            Arg::Optional(children) => children.last().map(|n| n.span()),
+                            
+                        })
+                        .map(|s| cmd_span.merge(s))
+                        .unwrap_or(cmd_span);
+                    nodes.push(Node::Command { name, args, span: full_span });
                 }
 
                 TokenKind::BeginGroup => {
@@ -171,6 +177,43 @@ impl Parser {
         }
 
         nodes
+    }
+    /// Consume all immediately following `{ ... }` groups as mandatory args.
+    ///
+    /// TeX commands pick up their arguments greedily; we skip spaces between
+    /// the command name and the first argument to match TeX's behaviour.
+    fn parse_mandatory_args(&mut self) -> Vec<Arg> {
+        let mut args = Vec::new();
+        
+        loop {
+            // Skip spaces between the command and its arguments.
+            if self.peek_kind() == Some(&TokenKind::Space) {
+                self.bump();
+            }
+
+            if self.peek_kind() != Some(&TokenKind::BeginGroup) {
+                break;
+            }
+            
+            // Consume the opening brace.
+            self.bump();
+            let children = self.parse_nodes(Some(&TokenKind::EndGroup));
+            if self.peek_kind() == Some(&TokenKind::EndGroup) {
+                self.bump();
+            } else {
+                self.errors.push(Diagnostic::error(
+                        "E021",
+                        "unclosed mandatory argument",
+                ));
+            }
+            args.push(Arg::Mandatory(children));
+
+            // Only keep consuming args if the very next non-space token is 
+            // also a `{`. Most LaTeX commands take a fixed number of args but 
+            // I haven't gotten round to tracking that yet.
+        }
+
+        args
     }
 
     /// Append a character to the last `Text` node, or start a new one.
