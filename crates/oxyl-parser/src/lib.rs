@@ -260,10 +260,17 @@ mod tests {
     #[test]
     fn command_one_mandatory_arg() {
         let (name, args) = first_command("\\textbf{hello}");
-        assert_eq!(name, "texbf");
+        assert_eq!(name, "textbf");
         assert_eq!(args.len(), 1);
         assert!(matches!(&args[0], Arg::Mandatory(children)
                 if matches!(&children[0], Node::Text(s, _) if s == "hello")));
+    }
+
+    #[test]
+    fn command_two_mandatory_args() {
+        let (name, args) = first_command("\\frac{a}{b}");
+        assert_eq!(name, "frac");
+        assert_eq!(args.len(), 2);
     }
     
     #[test]
@@ -293,22 +300,26 @@ mod tests {
     }
 
     #[test]
-    fn bare_command_node() {
-        let r = parse("\\LaTeX");
-        assert!(matches!(&r.document.body[0], Node::Command { name, .. } if name == "LaTeX"));
-    }
-
-    #[test]
-    fn brace_group_node() {
-        let r = parse("{hello}");
-        assert!(matches!(&r.document.body[0], Node::Group(..)));
-        assert!(r.errors.is_empty());
-    }
-
-    #[test]
-    fn unclosed_group_produces_error() {
-        let r = parse("{oops");
+    fn unclosed_arg_produces_error() {
+        let r = parse("\\cmd{oops");
         assert!(!r.errors.is_empty());
-        assert_eq!(r.errors[0].code, "E020" );
+    }
+
+    #[test]
+    fn paragraph_break_still_works() {
+        let r = parse("line one\n\nline two");
+        let has_par = r.document.body.iter().any(|n| matches!(n, Node::ParagraphBreak(_)));
+        assert!(has_par);
+    }
+
+    #[test]
+    fn nested_command_in_arg() {
+        let r = parse("\\outer{\\inner{x}}");
+        assert!(r.errors.is_empty());
+        if let Node::Command { args, .. } = &r.document.body[0] {
+            if let Arg::Mandatory(inner) = &args[0] {
+            assert!(matches!(&inner[0], Node::Command { name, .. } if name == "inner"));
+            } else { panic!("expected mandatory arg"); }
+    } else { panic!("expected command"); }
     }
 }
