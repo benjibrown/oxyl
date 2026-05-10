@@ -24,7 +24,7 @@ fn main() {
             }
             other => {
                 if file.is_some() {
-                    eprintln!("oxyl: too many positional arguments. Try --help");
+                    eprintln!("oxyl: too many positional arguments. Try --help.");
                     std::process::exit(1);
                 }
                 file = Some(other.to_owned());
@@ -78,7 +78,7 @@ fn main() {
     }
 
     if dump_ast {
-        println!("=== AST ({} top-lexel AST node(s)) ===", parse_result.document.body.len());
+        println!("=== AST ({} top-level AST node(s)) ===", parse_result.document.body.len());
         for node in &parse_result.document.body {
             println!("  {node:?}");
         }
@@ -101,7 +101,7 @@ fn print_help() {
     println!("oxyl - a LaTeX compiler (work in progress)");
     println!();
     println!("USAGE:");
-    println!(" oxyl [FLAGS] <file.tex>");
+    println!("  oxyl [FLAGS] <file.tex>");
     println!();
     println!("FLAGS:");
     println!("  --dump-tokens   Print every token with its byte span, then exit");
