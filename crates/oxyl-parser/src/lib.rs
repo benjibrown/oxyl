@@ -176,7 +176,7 @@ impl Parser {
 
         nodes
     }
-    /// Consume all immediately following `{ ... }` groups as mandatory args.
+    /// Consume all immediately following `[...] and `{ ... }` groups as mandatory args.
     ///
     /// TeX commands pick up their arguments greedily; we skip spaces between
     /// the command name and each argument to match TeX's behaviour. The loop
