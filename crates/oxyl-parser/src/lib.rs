@@ -340,4 +340,18 @@ mod tests {
         assert!(matches!(&args[1], Arg::Mandatory(_)));
         assert!(matches!(&args[2], Arg::Mandatory(_)));
     }
+
+    #[test]
+    fn unclosed_optional_arg_produces_error() {
+        let r = parse("\\cmd[oops");
+        assert!(!r.errors.is_empty());
+    }
+
+    #[test]
+    fn bracket_outside_command_is_text() {
+        // A `'[` not directly after a control sequence is just ordinary text.
+        let r = parse("hello [world]");
+        assert!(r.errors.is_empty());
+        assert!(matches!(&r.document.body[0], Node::Text(s, _) if s == "hello [world]"));
+    }
 }
