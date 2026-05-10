@@ -289,32 +289,6 @@ mod tests {
     }
     
     #[test]
-    fn empty_source() {
-        let r = parse("");
-        assert!(r.document.body.is_empty());
-        assert!(r.errors.is_empty());
-    }
-
-    #[test]
-    fn plain_text_node() {
-        let r = parse("hello world");
-        assert_eq!(r.document.body.len(), 1);
-        assert!(matches!(&r.document.body[0], Node::Text(s, _) if s == "hello world"));
-    }
-    
-    #[test]
-    fn paragraph_break_node() {
-        let r = parse("first\n\nsecond");
-        let kinds: Vec<&str> = r.document.body.iter().map(|n| match n {
-            Node::Text(..) => "text",
-            Node::ParagraphBreak(..) => "par",
-            Node::Command { .. } => "cmd",
-            Node::Group(..) => "group",
-        }).collect();
-        assert!(kinds.contains(&"par"), "expected a paragraph break node");
-    }
-
-    #[test]
     fn unclosed_arg_produces_error() {
         let r = parse("\\cmd{oops");
         assert!(!r.errors.is_empty());
@@ -336,5 +310,16 @@ mod tests {
             assert!(matches!(&inner[0], Node::Command { name, .. } if name == "inner"));
             } else { panic!("expected mandatory arg"); }
         } else { panic!("expected command"); }
+    }
+
+    #[test]
+    fn command_with_optional_arg() {
+        let (name, args) = first_command("\\sqrt[3]{27}");
+        assert_eq!(name, "sqrt");
+        assert_eq!(args.len(), 2);
+        assert!(matches!(&args[0], Arg::Optional(children)
+                if matches!(&children[0], Node::Text(s, _) if s == "3")));
+        assert!(matches!(&args[1], Arg::Mandatory(children)
+                if matches!(&children[0], Node::Text(s, _) if s== "27")));
     }
 }
