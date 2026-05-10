@@ -3,10 +3,39 @@ use oxyl_lexer::Lexer;
 use oxyl_parser::Parser;
 
 fn main() {
-    let path = match std::env::args().nth(1) {
+    let args: Vec<String> = std::env::args().collect();
+
+    // Parse flags and positional argument.
+    let mut dump_tokens = false;
+    let mut dump_ast = false; 
+    let mut file: Option<String> = None;
+
+    for arg in args.iter().skip(1) {
+        match arg.as_str() {
+            "--dump-tokens" => dump_tokens = true, 
+            "--dump-ast" => dump_ast = true,
+            "--help" | "-h" => {
+                print_help();
+                return;
+            }
+            other if other.starts_with('-') => {
+                eprintln!("oxyl: unknown flag '{other}'. Try --help.");
+                std::process::exit(1);
+            }
+            other => {
+                if file.is_some() {
+                    eprintln!("oxyl: too many positional arguments. Try --help");
+                    std::process::exit(1);
+                }
+                file = Some(other.to_owned());
+            }
+        }
+    }
+
+    let path = match file {
         Some(p) => p,
         None => {
-            eprintln!("usage: oxyl <file.tex>");
+            print_help();
             std::process::exit(1);
         }
     };
@@ -19,7 +48,7 @@ fn main() {
         }
     };
 
-    // Lex.
+    // --- Lex. --- 
     let lex_result = Lexer::new(&src).tokenise();
     let mut had_error = false;
 
@@ -27,6 +56,17 @@ fn main() {
         let d: Diagnostic = e.clone().into();
         print_diagnostic(&d, &src);
         had_error = true;
+    }
+
+    if dump_tokens {
+        println!("=== tokens ({}) ===", lex_result.tokens.len());
+        for tok in &lex_result.tokens {
+            println!("  {:>6}..{:<6}  {}", tok.span.start, tok.span.end, tok.kind);
+        }
+        if had_error {
+            std::process::exit(1);
+        }
+        return;
     }
 
     // Parse.
@@ -46,6 +86,18 @@ fn main() {
     println!("ok: parsed {node_count} top-level node(s) from {path}");
 }
 
+fn print_help() {
+    println!("oxyl - a LaTeX compiler (work in progress)");
+    println!();
+    println!("USAGE:");
+    println!(" oxyl [FLAGS] <file.tex>");
+    println!();
+    println!("FLAGS:");
+    println!("  --dump-tokens   Print every token with its byte span, then exit");
+    println!("  --dump-ast      Print the parsed AST nodes, then exit");
+    println!("  --help, -h      Print this help message");
+}
+
 /// Print a diagnostic with an inline source extract if possible.
 fn print_diagnostic(d: &Diagnostic, src: &str) {
     let mut enriched = d.clone();
@@ -57,6 +109,9 @@ fn print_diagnostic(d: &Diagnostic, src: &str) {
         enriched = enriched.with_source_hint(hint);
     }
 
+    // Also add a span if the diagnostic was created without one but we can 
+    // reocver a position from the message (best effort for parser errors 
+    // that have the location in the message text).
     if enriched.span.is_none() {
         if let Some(span) = parse_span_from_message(&d.message) {
             let hint = extract_line(src, span.start);
@@ -67,7 +122,7 @@ fn print_diagnostic(d: &Diagnostic, src: &str) {
     eprintln!("{enriched}");
 }
 
-/// Extract the source line containing `byte_pos
+/// Extract the source line containing `byte_pos`.
 fn extract_line(src: &str, byte_pos: usize) -> String {
     let safe_pos = byte_pos.min(src.len().saturating_sub(1));
     let line_start = src[..safe_pos].rfind('\n').map(|i| i + 1).unwrap_or(0);
