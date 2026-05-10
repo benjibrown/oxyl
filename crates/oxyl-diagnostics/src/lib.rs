@@ -144,9 +144,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn error_display() {
+    fn error_display_no_span() {
         let d = Diagnostic::error("E001", "undefined control sequence");
         assert_eq!(d.to_string(), "error [E001]: undefined control sequence");
+    }
+
+    #[test]
+    fn error_display_with_span() {
+        let d = Diagnostic::error("E001", "bad input")
+            .with_span(DiagSpan::new(4, 9));
+        assert!(d.to_string().contains("at 4..9"));
+    }
+
+    #[test]
+    fn error_display_with_hint() {
+        let d = Diagnostic::error("E001", "bad input")
+            .with_span(DiagSpan::new(0,3))
+            .with_source_hint("abc");
+        assert!(d.to_string().contains("| abc"));
     }
 
     #[test]
@@ -164,8 +179,15 @@ mod tests {
     }
 
     #[test]
-    fn lex_error_display () {
+    fn lex_error_display_() {
         let e = LexError::NonAsciiChar { pos: 5, ch: 'è'};
         assert!(e.to_string().contains("non-ASCII"));
+    }
+
+    #[test]
+    fn lex_error_into_diagnostic_carries_span() {
+        let e = LexError::UnexpectedEndAfterBackslash { pos: 7 };
+        let d: Diagnostic =  e.into();
+        assert!(d.span.is_some());
     }
 }
