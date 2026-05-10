@@ -77,6 +77,17 @@ fn main() {
         had_error = true;
     }
 
+    if dump_ast {
+        println!("=== AST ({} top-lexel AST node(s)) ===", parse_result.document.body.len());
+        for node in &parse_result.document.body {
+            println!("  {node:?}");
+        }
+        if had_error {
+            std::process::exit(1);
+        }
+        return;
+    }
+    
     if had_error {
         std::process::exit(1);
     }
