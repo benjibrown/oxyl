@@ -322,4 +322,22 @@ mod tests {
         assert!(matches!(&args[1], Arg::Mandatory(children)
                 if matches!(&children[0], Node::Text(s, _) if s== "27")));
     }
+
+    #[test]
+    fn command_with_only_optional_arg() {
+        let (name, args) = first_command("\\foo[opt]");
+        assert_eq!(name, "foo");
+        assert_eq!(args.len(), 1);
+        assert!(matches!(&args[0], Arg::Optional(_)));
+    }
+
+    #[test]
+    fn optional_then_two_mandatory() {
+        // two diff types of option + ordering 
+        let (_, args) = first_command("\\section[short]{long}{extra}");
+        assert_eq!(args.len(), 3);
+        assert!(matches!(&args[0], Arg::Optional(_)));
+        assert!(matches!(&args[1], Arg::Mandatory(_)));
+        assert!(matches!(&args[2], Arg::Mandatory(_)));
+    }
 }
