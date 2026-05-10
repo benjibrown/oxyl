@@ -180,40 +180,54 @@ impl Parser {
     ///
     /// TeX commands pick up their arguments greedily; we skip spaces between
     /// the command name and the first argument to match TeX's behaviour.
-    fn parse_mandatory_args(&mut self) -> Vec<Arg> {
+    
+    fn parse_args(&mut self) -> Vec<Arg> {
         let mut args = Vec::new();
         
         loop {
-            // Skip spaces between the command and its arguments.
+            // Skip spaces between the command and its next argument.
             if self.peek_kind() == Some(&TokenKind::Space) {
                 self.bump();
             }
 
-            if self.peek_kind() != Some(&TokenKind::BeginGroup) {
-                break;
+            match self.peek_kind() {
+                Some(&TokenKind::BeginGroup) => args.push(self.parse_mandatory_arg()),
+                Some(&TokenKind::Char('[')) => args.push(self.parse_optional_arg()),
+                _ => break,
             }
-            
-            // Consume the opening brace.
-            self.bump();
-            let children = self.parse_nodes(Some(&TokenKind::EndGroup));
-            if self.peek_kind() == Some(&TokenKind::EndGroup) {
-                self.bump();
-            } else {
-                self.errors.push(Diagnostic::error(
-                        "E021",
-                        "unclosed mandatory argument",
-                ));
-            }
-            args.push(Arg::Mandatory(children));
-
-            // Only keep consuming args if the very next non-space token is 
-            // also a `{`. Most LaTeX commands take a fixed number of args but 
-            // I haven't gotten round to tracking that yet.
         }
+    }    
 
-        args
+    fn parse_mandatory_arg(&mut self) -> Vec<Arg> {
+        // Consume the opening brace.
+        self.bump();
+        let children = self.parse_nodes(Some(&TokenKind::EndGroup));
+        if self.peek_kind() == Some(&TokenKind::EndGroup) {
+            self.bump();
+        } else {
+            self.errors.push(Diagnostic::error(
+                "E021",
+                "unclosed mandatory argument",
+            ));
+        }
+        Arg::Mandatory(children)
     }
 
+    fn parse_optional_arg(&mut self) -> Arg {
+        // Consume the opening `[`.
+        self.bump();
+        let children = self.parse_nodes(Some(&TokenKind::Char(']')));
+        if self.peek_kind() == Some(&TokenKind::Char(']')) {
+            self.bump();
+        } else {
+            self.errors.push(Diagnostic::error(
+                    "E022",
+                    "unclosed optional argument",
+            ));
+        }
+        Arg::Optional(children)
+    }
+    
     /// Append a character to the last `Text` node, or start a new one.
     fn push_char(&self, nodes: &mut Vec<Node>, c: char, span: Span) {
         match nodes.last_mut() {
