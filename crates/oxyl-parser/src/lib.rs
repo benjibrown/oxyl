@@ -1,12 +1,12 @@
 // oxyl-parser
-// Converts a token stream from oxyl-lexer into an AST.
-// Currently will only handle plain text runs 
-// and paragrah breaks. Everything else will be left as a Char token for now 
-// and collected into text. 
-// Currently working on support for mandatory brace argument parsing 
-// After a \command the parser greedily consumes any immediately following 
-// { ... } groups. 
-// This should cover most common patterns like \frac{a}{b} etc.
+// 
+// Builds a Document of Nodes from the lexer's token stream.
+//
+// Commands pick up arguments greedily: any leading [ .. ] groups become 
+// Arg::Optional, then any following { .. } groups becme Arg::Mandatory, 
+// in whatever order they appear.
+// Don't have command signatures yet, so the loop just keeps eating arguments
+// until the next token is neither `[` nor `{`.
 
 
 use oxyl_diagnostics::Diagnostic;
@@ -141,7 +141,7 @@ impl Parser {
 
                 TokenKind::ControlSeq(name) => {
                     let cmd_span = tok.span; 
-                    let args = self.parse_mandatory_args();
+                    let args = self.parse_args();
                     // Extend the span to cover the last argument. 
                     let full_span = args.last()
                         .and_then(|a| match a {
@@ -179,8 +179,8 @@ impl Parser {
     /// Consume all immediately following `{ ... }` groups as mandatory args.
     ///
     /// TeX commands pick up their arguments greedily; we skip spaces between
-    /// the command name and the first argument to match TeX's behaviour.
-    
+    /// the command name and each argument to match TeX's behaviour. The loop
+    /// stops at the first token that is neither `[` nor `{`.
     fn parse_args(&mut self) -> Vec<Arg> {
         let mut args = Vec::new();
         
@@ -196,9 +196,10 @@ impl Parser {
                 _ => break,
             }
         }
+        args
     }    
 
-    fn parse_mandatory_arg(&mut self) -> Vec<Arg> {
+    fn parse_mandatory_arg(&mut self) -> Arg {
         // Consume the opening brace.
         self.bump();
         let children = self.parse_nodes(Some(&TokenKind::EndGroup));
