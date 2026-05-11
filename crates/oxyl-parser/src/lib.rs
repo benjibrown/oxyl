@@ -9,9 +9,12 @@
 // TODO - math specific structure ie atoms, scripts etc and display math (\[\])
 
 
-use oxyl_diagnostics::Diagnostic;
+use oxyl_diagnostics::{DiagSpan, Diagnostic};
 use oxyl_lexer::{Span, Token, TokenKind};
 
+fn diag_span(s: Span) -> DiagSpan {
+    DiagSpan::new(s.start, s.end)
+}
 // --- 
 // AST Types 
 //
@@ -162,10 +165,10 @@ impl Parser {
                         nodes.push(Node::Group(children, open_span.merge(close.span)));
                     } else {
                         // Unclosed group - record the error, keep what we parsed.
-                        self.errors.push(Diagnostic::error(
-                            "E020",
-                            format!("unclosed '{{' at {open_span}"),
-                        ));
+                        self.errors.push(
+                            Diagnostic::error("E020", "unclosed '{'")
+                                .with_span(diag_span(open_span)),
+                        );
                         nodes.push(Node::Group(children, open_span));
                     }
                 }
@@ -177,10 +180,10 @@ impl Parser {
                         let close = self.bump().unwrap();
                         nodes.push(Node::Math(children, open_span.merge(close.span)));
                     } else {
-                        self.errors.push(Diagnostic::error(
-                            "E030",
-                            format!("unclosed at '$' (math mode) at {open_span}"),
-                        ));
+                        self.errors.push(
+                            Diagnostic::error("E030", "unclosed '$' (math mode)")
+                                .with_span(diag_span(open_span)),
+                        );
                     }
                 }
                 // Everything else is left unhandled for now so skip it.
@@ -214,31 +217,31 @@ impl Parser {
     }    
 
     fn parse_mandatory_arg(&mut self) -> Arg {
-        // Consume the opening brace.
-        self.bump();
+        // Consume the opening brace, remembering its span for diagnostics.
+        let open_span = self.bump().unwrap().span;
         let children = self.parse_nodes(Some(&TokenKind::EndGroup));
         if self.peek_kind() == Some(&TokenKind::EndGroup) {
             self.bump();
         } else {
-            self.errors.push(Diagnostic::error(
-                "E021",
-                "unclosed mandatory argument",
-            ));
+            self.errors.push(
+                Diagnostic::error("E021","unclosed mandatory argument")
+                    .with_span(diag_span(open_span)),
+            );
         }
         Arg::Mandatory(children)
     }
 
     fn parse_optional_arg(&mut self) -> Arg {
-        // Consume the opening `[`.
-        self.bump();
+        // Consume the opening `[`, remembering its span for diagnostics.
+        let open_span = self.bump().unwrap().span;
         let children = self.parse_nodes(Some(&TokenKind::Char(']')));
         if self.peek_kind() == Some(&TokenKind::Char(']')) {
             self.bump();
         } else {
-            self.errors.push(Diagnostic::error(
-                "E022",
-                "unclosed optional argument",
-            ));
+            self.errors.push(
+                Diagnostic::error("E022","unclosed optional argument")
+                    .with_span(diag_span(open_span)),
+            );
         }
         Arg::Optional(children)
     }
