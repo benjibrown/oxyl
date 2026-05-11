@@ -2,11 +2,11 @@
 // 
 // Builds a Document of Nodes from the lexer's token stream.
 //
-// Commands pick up arguments greedily: any leading [ .. ] groups become 
-// Arg::Optional, then any following { .. } groups becme Arg::Mandatory, 
-// in whatever order they appear.
-// Don't have command signatures yet, so the loop just keeps eating arguments
-// until the next token is neither `[` nor `{`.
+// - Commands greedily pick up [...] and {...} until the next token 
+// is neither of those.
+// - A pair of $ tokens wraps a math node, whose children are parsed 
+// with the same func as ordinary text. 
+// TODO - math specific structure ie atoms, scripts etc and display math (\[\])
 
 
 use oxyl_diagnostics::Diagnostic;
@@ -178,8 +178,8 @@ impl Parser {
                         nodes.push(Node::Math(children, open_span.merge(close.span)));
                     } else {
                         self.errors.push(Diagnostic::error(
-                                "E030",
-                                format!("unclosed at '$' (math mode) at {open_span}"),
+                            "E030",
+                            format!("unclosed at '$' (math mode) at {open_span}"),
                         ));
                     }
                 }
@@ -236,8 +236,8 @@ impl Parser {
             self.bump();
         } else {
             self.errors.push(Diagnostic::error(
-                    "E022",
-                    "unclosed optional argument",
+                "E022",
+                "unclosed optional argument",
             ));
         }
         Arg::Optional(children)
