@@ -393,4 +393,18 @@ mod tests {
         }
     }
 
+    #[test]
+    fn unclosed_math_produces_error() {
+        let r = parse("text $oops");
+        assert!(!r.errors.is_empty());
+    }
+
+    #[test]
+    fn math_after_text() {
+        let r = parse("hello $x$");
+        assert!(r.errors.is_empty());
+        assert_eq!(r.document.body.len(), 2);
+        assert!(matches!(&r.document.body[0], Node::Text(s, _) if s == "hello "));
+        assert!(matches!(&r.document.body[1], Node::Math(_, _)));
+    }
 }
