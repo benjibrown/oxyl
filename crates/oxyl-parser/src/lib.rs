@@ -368,4 +368,29 @@ mod tests {
         assert!(r.errors.is_empty());
         assert!(matches!(&r.document.body[0], Node::Text(s, _) if s == "hello [world]"));
     }
+
+    #[test]
+    fn inline_math_simple() {
+        let r = parse("$x+1$");
+        assert!(r.errors.is_empty());
+        assert_eq!(r.document.body.len(), 1);
+        assert!(matches!(&r.document.body[0], Node::Math(children, _)
+                if matches!(&children[0], Node::Text(s, _) if s == "x+1")));
+    }
+
+    #[test]
+    fn inline_math_with_command() {
+        let r = parse("$\\alpha + \\beta$");
+        assert!(r.errors.is_empty());
+        if let Node::Math(children, _) = &r.document.body[0] {
+            let names: Vec<_> = children.iter().filter_map(|n| match n {
+                Node::Command { name, .. } => Some(name.as_str()),
+                _ => None 
+            }).collect();
+            assert_eq!(names, vec!["alpha", "beta"]);
+        } else {
+            panic!("expected math node");
+        }
+    }
+
 }
