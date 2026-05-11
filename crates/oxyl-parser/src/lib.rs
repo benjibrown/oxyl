@@ -385,7 +385,7 @@ mod tests {
         if let Node::Math(children, _) = &r.document.body[0] {
             let names: Vec<_> = children.iter().filter_map(|n| match n {
                 Node::Command { name, .. } => Some(name.as_str()),
-                _ => None 
+                _ => None, 
             }).collect();
             assert_eq!(names, vec!["alpha", "beta"]);
         } else {
