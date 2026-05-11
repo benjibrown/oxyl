@@ -44,6 +44,9 @@ pub enum Node {
 
     /// A braced group `{...}`.
     Group(Vec<Node>, Span),
+    
+    /// Inline match: `$ ... $`. The span covers both `$` delimiters.
+    Math(Vec<Node>, Span),
 }
 
 impl Node {
@@ -53,6 +56,7 @@ impl Node {
             Node::ParagraphBreak(s) => *s,
             Node::Command { span, .. } => *span,
             Node::Group(_, s) => *s,
+            Node::Math(_, s) => *s,
         }
     }
 }
@@ -66,7 +70,7 @@ pub enum Arg {
 
 // --- 
 // Parser Result 
-//
+// --- 
 
 /// Returned by [`Parser::parse`]. The document is always produced; errors 
 /// are collected alongside it so the caller sees everything at once.
@@ -94,10 +98,7 @@ impl Parser {
     /// Parse the token stream.
     pub fn parse(mut self) -> ParseResult {
         let body = self.parse_nodes(None);
-        ParseResult {
-            document: Document { body },
-            errors: self.errors,
-        }
+        ParseResult { document: Document { body }, errors: self.errors }
     }
 
     fn peek(&self) -> Option<&Token> {
@@ -162,8 +163,8 @@ impl Parser {
                     } else {
                         // Unclosed group - record the error, keep what we parsed.
                         self.errors.push(Diagnostic::error(
-                                "E020",
-                                format!("unclosed '{{' at {open_span}"),
+                            "E020",
+                            format!("unclosed '{{' at {open_span}"),
                         ));
                         nodes.push(Node::Group(children, open_span));
                     }
@@ -307,7 +308,7 @@ mod tests {
         assert!(r.errors.is_empty());
         if let Node::Command { args, .. } = &r.document.body[0] {
             if let Arg::Mandatory(inner) = &args[0] {
-            assert!(matches!(&inner[0], Node::Command { name, .. } if name == "inner"));
+                assert!(matches!(&inner[0], Node::Command { name, .. } if name == "inner"));
             } else { panic!("expected mandatory arg"); }
         } else { panic!("expected command"); }
     }
