@@ -1,4 +1,4 @@
-use oxyl_diagnostics::{Diagnostic, DiagSpan};
+use oxyl_diagnostics::Diagnostic;
 use oxyl_lexer::Lexer;
 use oxyl_parser::Parser;
 
@@ -78,7 +78,7 @@ fn main() {
     }
 
     if dump_ast {
-        println!("=== AST ({} top-level AST node(s)) ===", parse_result.document.body.len());
+        println!("=== AST ({} top-level node(s)) ===", parse_result.document.body.len());
         for node in &parse_result.document.body {
             println!("  {node:?}");
         }
@@ -113,21 +113,12 @@ fn print_help() {
 fn print_diagnostic(d: &Diagnostic, src: &str) {
     let mut enriched = d.clone();
 
-    // If the diagnostic has a span but no source hint yet, extract the 
-    // relevant line from the source and attach it.
+    // If the diagnostic has a span but no source hint yet, pull the 
+    // line out of the source and attach it. The parser always attaches a span 
+    // to its errors, so don't need to do some wizardry with the text to recover one.
     if let (Some(span), None) = (&d.span, &d.source_hint) {
         let hint = extract_line(src, span.start);
         enriched = enriched.with_source_hint(hint);
-    }
-
-    // Also add a span if the diagnostic was created without one but we can 
-    // reocver a position from the message (best effort for parser errors 
-    // that have the location in the message text).
-    if enriched.span.is_none() {
-        if let Some(span) = parse_span_from_message(&d.message) {
-            let hint = extract_line(src, span.start);
-            enriched = enriched.with_span(span).with_source_hint(hint);
-        }
     }
 
     eprintln!("{enriched}");
@@ -144,12 +135,4 @@ fn extract_line(src: &str, byte_pos: usize) -> String {
     src[line_start..line_end].to_owned()
 }
 
-/// Best-effort: parse a `N..M` span out of a message like "unclosed '{' at 3..4"
-fn parse_span_from_message(msg: &str) -> Option<DiagSpan> {
-    let at = msg.rfind("at ")?;
-    let rest = &msg[at + 3..];
-    let dot2 = rest.find("..")?;
-    let start: usize = rest[..dot2].trim().parse().ok()?;
-    let end: usize = rest[dot2 + 2..].trim().parse().ok()?;
-    Some(DiagSpan::new(start, end))
-}
+
