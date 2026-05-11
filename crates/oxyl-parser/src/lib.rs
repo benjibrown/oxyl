@@ -6,6 +6,9 @@
 // is neither of those.
 // - A pair of $ tokens wraps a math node, whose children are parsed 
 // with the same func as ordinary text. 
+//  - Every error carries a DiagSpan poiting at the token that triggered it 
+//  (the unmatched bracket or dollar sign) so the cli can render source 
+//  context without having to extract it from the message string :D
 // TODO - math specific structure ie atoms, scripts etc and display math (\[\])
 
 
@@ -400,6 +403,23 @@ mod tests {
     fn unclosed_math_produces_error() {
         let r = parse("text $oops");
         assert!(!r.errors.is_empty());
+    }
+    
+    #[test]
+    fn parser_errors_carry_spans() {
+        let cases = [
+            "\\cmd{oops", // E021
+            "\\cmd[oops", // E022
+            "{", // E020
+            "$oops", // E030
+        ];
+        for src in cases {
+            let r = parse(src);
+            assert!(!r.errors.is_empty(), "expected error for {src:?}");
+            for e in &r.errors {
+                assert!(e.span.is_some(), "error for {src:?} has no span: {e:?}");
+            }
+        }
     }
 
     #[test]
