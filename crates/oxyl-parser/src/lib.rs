@@ -169,7 +169,20 @@ impl Parser {
                         nodes.push(Node::Group(children, open_span));
                     }
                 }
-
+                
+                TokenKind::MathShift => {
+                    let open_span = tok.span;
+                    let children = self.parse_nodes(Some(&TokenKind::MathShift));
+                    if self.peek_kind() == Some(&TokenKind::MathShift) {
+                        let close = self.bump().unwrap();
+                        nodes.push(Node::Math(children, open_span.merge(close.span)));
+                    } else {
+                        self.errors.push(Diagnostic::error(
+                                "E030",
+                                format!("unclosed at '$' (math mode) at {open_span}"),
+                        ));
+                    }
+                }
                 // Everything else is left unhandled for now so skip it.
                 _ => {}
             }
@@ -177,7 +190,7 @@ impl Parser {
 
         nodes
     }
-    /// Consume all immediately following `[...] and `{ ... }` groups as mandatory args.
+    /// Consume all immediately following `[...] and `{ ... }` groups as args.
     ///
     /// TeX commands pick up their arguments greedily; we skip spaces between
     /// the command name and each argument to match TeX's behaviour. The loop
