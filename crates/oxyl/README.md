@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/benjibrown/oxyl/blob/main/assets/logo.png?raw=true" alt="logo" width="900"/>
+<img src="https://txtr.benji.mom/oxyl.png" alt="logo" width="900"/>
 
 **A LaTeX compiler written in Rust.**
 </div>
