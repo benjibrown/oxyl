@@ -1,7 +1,11 @@
 // oxyl-diagnostics 
 // 
-// Shared error and warning types used across all oxyl crates.
-
+// Shared Severity, Diagnostic and lex error types used across the other crates.
+// Kept small so its at bottom of dep. graph.
+//
+//
+// The source helper maps byte spans to 1 based line/col and lets diagnostic produce a message 
+// w/span.
 
 /// How serious a diagnostic is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,6 +60,49 @@ pub struct Diagnostic {
     pub span: Option<DiagSpan>,
     /// A short extract of the source shown below the message, if provided.
     pub source_hint: Option<String>,
+}
+
+// --- 
+// Source - byte offset to line/col map 
+//
+
+
+/// A view of source text with a precomputed line index.
+///
+pub struct Source<'a> {
+    text: &'a str,
+    line_starts: Vec<usize>,
+}
+
+impl<'a> Source <'a> {
+    pub fn new(text: &'a str) -> Self {
+        let mut line_starts = vec![0];
+        for (i, b) in text.bytes().enumerate() {
+            if b == b'\n' {
+                line_starts.push(i + 1);
+            }
+        }
+        Self { text, line_starts }
+    }
+
+    pub fn line_col(&self, byte: usize) -> (usize, usize) {
+        let line_idx = match self.line_starts.binary_search(&byte) {
+            Ok(i) => i,
+            Err(i) => i.saturating_sub(1),
+        };
+        let line_start = self.line_starts[line_idx];
+        let col = byte.min(self.text.len()) - line_start;
+        (line_idx + 1, col + 1)
+    }
+
+    pub fn line_text(&self, line: usize) -> &str {
+        let idx = line.saturating_sub(1).min(self.line_starts.len() - 1);
+        let start = self.line_starts[idx];
+        let end = self.line_starts.get(idx + 1)
+            .map(|&n| n.saturating_sub(1))
+            .unwrap_or(self.text.len());
+        &self.text[start..end.min(self.text.len())]
+    }
 }
 
 impl Diagnostic {
