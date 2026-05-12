@@ -4,8 +4,10 @@
 // Kept small so its at bottom of dep. graph.
 //
 //
-// The source helper maps byte spans to 1 based line/col and lets diagnostic produce a message 
-// w/span.
+// The source helper maps byte spans to 1 based line/col and lets 
+// the Diagnostic::Render produce a caret-style listing the CLI shows.
+// Display keeps workinf without a source for callers that dont have one too 
+// (tests, lib users etc).
 
 /// How serious a diagnostic is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
