@@ -277,4 +277,31 @@ mod tests {
         assert_eq!(s.line_col(10), (2, 5)); // d 
         assert_eq!(s.line_col(12), (3,1)); // !
     }
+
+    #[test]
+    fn source_line_text() {
+        let s = Source::new("hello\nworld\n!");
+        assert_eq!(s.line_text(1), "hello");
+        assert_eq!(s.line_text(2), "world");
+        assert_eq!(s.line_text(3), "!");
+    }
+
+    #[test]
+    fn render_include_caret_and_line_number() {
+        let src = Source::new("foo {bar\n");
+        let d = Diagnostic::error("E020", "unclosed '{'")
+            .with_span(DiagSpan::new(4, 5));
+        let out = d.render(&src);
+        assert!(out.contains("line 1:5"));
+        assert!(out.contains("foo {bar"));
+        assert!(out.contains("^"));
+    }
+
+    #[test]
+    fn render_falls_back_when_no_span() {
+        let src = Source::new("anything");
+        let d = Diagnostic::error("E001", "no location");
+        // Without a span, render should match plain Display.
+        assert_eq!(d.render(&src), d.to_string());
+    }
 }
