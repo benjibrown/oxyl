@@ -69,7 +69,10 @@ pub struct Diagnostic {
 
 /// A view of source text with a precomputed line index.
 ///
-pub struct Source<'a> {
+/// Construct once per file; the line table is built upfront so that 
+/// repeated `line_col` lookups (one per diagnostic) aren't super slow
+/// I think O(log lines) - will fact check this later.
+pub struct Source <'a> {
     text: &'a str,
     line_starts: Vec<usize>,
 }
@@ -84,7 +87,11 @@ impl<'a> Source <'a> {
         }
         Self { text, line_starts }
     }
-
+    
+    /// Convert a byte offset into a 1-based `(line, column)`.
+    ///
+    /// Columns are byte-counted; the lexer rejects non-ASCII, so this 
+    /// matches what a user would expect from any ASCII editor.
     pub fn line_col(&self, byte: usize) -> (usize, usize) {
         let line_idx = match self.line_starts.binary_search(&byte) {
             Ok(i) => i,
@@ -94,7 +101,8 @@ impl<'a> Source <'a> {
         let col = byte.min(self.text.len()) - line_start;
         (line_idx + 1, col + 1)
     }
-
+    
+    /// Return the text of a 1-based line, without the trailing newline.
     pub fn line_text(&self, line: usize) -> &str {
         let idx = line.saturating_sub(1).min(self.line_starts.len() - 1);
         let start = self.line_starts[idx];
