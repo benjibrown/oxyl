@@ -1,5 +1,5 @@
 // TODO - next edits - bump version and make sure oxyl logo png gets pushed
-use oxyl_diagnostics::Diagnostic;
+use oxyl_diagnostics::{Diagnostic, Source};
 use oxyl_lexer::Lexer;
 use oxyl_parser::Parser;
 
@@ -49,13 +49,16 @@ fn main() {
         }
     };
 
+    // Build the source view once so every diagnostic shares its line index.
+    let source = Source::new(&src);
+
     // --- Lex. --- 
     let lex_result = Lexer::new(&src).tokenise();
     let mut had_error = false;
 
     for e in &lex_result.errors {
         let d: Diagnostic = e.clone().into();
-        print_diagnostic(&d, &src);
+        eprintln!("{}", d.render(&source));
         had_error = true;
     }
 
@@ -74,7 +77,7 @@ fn main() {
     let parse_result = Parser::new(lex_result.tokens).parse();
 
     for d in &parse_result.errors {
-        print_diagnostic(d, &src);
+        eprintln!("{}", d.render(&source));
         had_error = true;
     }
 
@@ -109,31 +112,4 @@ fn print_help() {
     println!("  --dump-ast      Print the parsed AST nodes, then exit");
     println!("  --help, -h      Print this help message");
 }
-
-/// Print a diagnostic with an inline source extract if possible.
-fn print_diagnostic(d: &Diagnostic, src: &str) {
-    let mut enriched = d.clone();
-
-    // If the diagnostic has a span but no source hint yet, pull the 
-    // line out of the source and attach it. The parser always attaches a span 
-    // to its errors, so don't need to do some wizardry with the text to recover one.
-    if let (Some(span), None) = (&d.span, &d.source_hint) {
-        let hint = extract_line(src, span.start);
-        enriched = enriched.with_source_hint(hint);
-    }
-
-    eprintln!("{enriched}");
-}
-
-/// Extract the source line containing `byte_pos`.
-fn extract_line(src: &str, byte_pos: usize) -> String {
-    let safe_pos = byte_pos.min(src.len().saturating_sub(1));
-    let line_start = src[..safe_pos].rfind('\n').map(|i| i + 1).unwrap_or(0);
-    let line_end = src[safe_pos..]
-        .find('\n')
-        .map(|i| safe_pos + i)
-        .unwrap_or(src.len());
-    src[line_start..line_end].to_owned()
-}
-
 
