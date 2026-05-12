@@ -143,6 +143,41 @@ impl Diagnostic {
         self.source_hint = Some(hint.into());
         self 
     }
+
+    pub fn render(&self, source: &Source) -> String {
+        let span = match self.span {
+            Some(s) => s,
+            None => return self.to_string(),
+        };
+
+        let (line, col) = source.line_col(span.start);
+        let line_text = source.line_text(line);
+        let gutter_w = line.to_string().len();
+        let pad = " ".repeat(col.saturating_sub(1));
+        // Clamp the caret length so it never overflows the displayed line.
+        let visible_room = line_text.len().saturating_sub(col.saturating_sub(1));
+        let caret_len = (span.end - span.start).max(1).min(visible_room.max(1));
+        let carets = "^".repeat(caret_len);
+        let blank_gutter = " ".repeat(gutter_w);
+
+        format!(
+            "{sev} [{code}]: {msg}\n\
+            {blank} --> line {line}:{col}\n\
+            {blank} |\n\
+            {line:>w$} | {line_text}\n\
+            {blank} | {pad}{carets}",
+            sev = self.severity,
+            code = self.code,
+            msg = self.message,
+            blank = blank_gutter,
+            line = line, 
+            col = col,
+            w = gutter_w,
+            line_text = line_text,
+            pad = pad,
+            carets = carets,
+        )
+    }
 }
 
 impl std::fmt::Display for Diagnostic {
