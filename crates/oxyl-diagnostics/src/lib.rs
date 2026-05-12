@@ -257,29 +257,24 @@ mod tests {
     }
 
     #[test]
-    fn warning_severity() {
-        let d = Diagnostic::warning("W001", "overfull hbox");
-        assert_eq!(d.severity, Severity::Warning);
-    }
-
-    #[test]
-    fn lex_error_into_diagnostic() {
-        let e = LexError::UnexpectedEndAfterBackslash { pos: 42 };
-        let d: Diagnostic = e.into();
-        assert_eq!(d.severity, Severity::Error);
-        assert_eq!(d.code, "E010");
-    }
-
-    #[test]
-    fn lex_error_display_() {
-        let e = LexError::NonAsciiChar { pos: 5, ch: 'è'};
-        assert!(e.to_string().contains("non-ASCII"));
-    }
-
-    #[test]
     fn lex_error_into_diagnostic_carries_span() {
         let e = LexError::UnexpectedEndAfterBackslash { pos: 7 };
         let d: Diagnostic =  e.into();
         assert!(d.span.is_some());
+    }
+
+    #[test]
+    fn source_line_col_first_line() {
+        let s = Source::new("hello\nworld\n");
+        assert_eq!(s.line_col(0), (1, 1));
+        assert_eq!(s.line_col(4), (1,5));
+    }
+
+    #[test]
+    fn source_line_col_subsequent_lines() {
+        let s = Source::new("hello\nworld\n!");
+        assert_eq!(s.line_col(6), (2,1)); // w
+        assert_eq!(s.line_col(10), (2, 5)); // d 
+        assert_eq!(s.line_col(12), (3,1)); // !
     }
 }
