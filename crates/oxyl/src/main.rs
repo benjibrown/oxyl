@@ -1,4 +1,3 @@
-// TODO - next edits - bump version and make sure oxyl logo png gets pushed
 use oxyl_diagnostics::{Diagnostic, Source};
 use oxyl_lexer::Lexer;
 use oxyl_parser::Parser;

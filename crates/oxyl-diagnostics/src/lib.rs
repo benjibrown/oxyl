@@ -164,10 +164,10 @@ impl Diagnostic {
 
         format!(
             "{sev} [{code}]: {msg}\n\
-            {blank} --> line {line}:{col}\n\
-            {blank} |\n\
-            {line:>w$} | {line_text}\n\
-            {blank} | {pad}{carets}",
+             {blank} --> line {line}:{col}\n\
+             {blank} |\n\
+             {line:>w$} | {line_text}\n\
+             {blank} | {pad}{carets}",
             sev = self.severity,
             code = self.code,
             msg = self.message,
