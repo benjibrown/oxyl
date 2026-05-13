@@ -331,4 +331,13 @@ mod tests {
         assert_eq!(kinds("\\#"), vec![TokenKind::ControlSeq("#".into())]);
         assert_eq!(kinds("\\["), vec![TokenKind::ControlSeq("[".into())]);
     }
+
+    #[test]
+    fn control_symbol_does_not_skip_trailing_space() {
+        assert_eq!(kinds("\\$ x"), vec![
+            TokenKind::ControlSeq("$".into()),
+            TokenKind::Space,
+            TokenKind::Char('x'),
+        ]);
+    }
 }
