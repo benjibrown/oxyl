@@ -20,7 +20,7 @@ fn diag_span(s: Span) -> DiagSpan {
 
 /// Stop predicate for `parse_nodes` when scanning the body of `\[ ... \]`.
 fn is_display_math_close(k: &TokenKind) -> bool {
-    matches!(k, TokenKind::Controlseq(s) if s == "]")
+    matches!(k, TokenKind::ControlSeq(s) if s == "]")
 }
 
 // --- 
