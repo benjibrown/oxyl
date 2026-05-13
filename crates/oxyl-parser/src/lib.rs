@@ -58,16 +58,20 @@ pub enum Node {
     
     /// Inline match: `$ ... $`. The span covers both `$` delimiters.
     Math(Vec<Node>, Span),
+
+    /// Display math: `\[ ... \]`. The span covers both delimiters.
+    DisplayMath(Vec<Node>, Span),
 }
 
 impl Node {
     pub fn span(&self) -> Span {
         match self {
-            Node::Text(_,s) => *s,
+            Node::Text(_, s) => *s,
             Node::ParagraphBreak(s) => *s,
             Node::Command { span, .. } => *span,
             Node::Group(_, s) => *s,
             Node::Math(_, s) => *s,
+            Node::DisplayMath(_, s) => *s,
         }
     }
 }
@@ -108,7 +112,7 @@ impl Parser {
     
     /// Parse the token stream.
     pub fn parse(mut self) -> ParseResult {
-        let body = self.parse_nodes(None);
+        let body = self.parse_nodes(|_| false);
         ParseResult { document: Document { body }, errors: self.errors }
     }
 
@@ -130,16 +134,19 @@ impl Parser {
         }
     }
 
-    /// Parse nodes until the token stream ends or `stop` matches. 
+    /// Parse a run of nodes until the token stream is exhausted or 
+    /// `stop` returns true for the next token's kind. The stopping token is 
+    /// left unconsumed so it can be examined and bumped by the caller !
     ///
-    /// `stop` is used by the group parser to halt at `}`.
-    fn parse_nodes(&mut self, stop: Option<&TokenKind>) -> Vec<Node> {
+    /// `stop` is used by the group parser to halt at `}` - it is a function pointer 
+    /// rather than an `impl Fn` so the recursive calls don't blow up the parser.
+    fn parse_nodes(&mut self, stop: fn(&TokenKind) -> bool) -> Vec<Node> {
         let mut nodes: Vec<Node> = Vec::new();
         
         loop {
             match self.peek() {
                 None => break,
-                Some(tok) if stop.map_or(false, |s| &tok.kind == s) => break,
+                Some(tok) if stop(&tok.kind) => break,
                 _ => {}
             }
 
@@ -149,7 +156,33 @@ impl Parser {
                 TokenKind::Char(c) => self.push_char(&mut nodes, c, tok.span),
                 TokenKind::Space => self.push_char(&mut nodes, ' ', tok.span),
 
-                TokenKind::ParagraphBreak => nodes.push(Node::ParagraphBreak(tok.span)),
+                TokenKind::ParagraphBreak => {
+                    nodes.push(Node::ParagraphBreak(tok.span));
+                }
+
+                // `\[` opens display math. 
+                TokenKind::ControlSeq(ref name) if name == "[" => {
+                    let open_span = tok.span;
+                    let children = self.parse_nodes(is_display_math_close);
+                    if matches!(self.peek_kind(), Some(TokenKind::ControlSeq(s)) if s == "]") {
+                        let close = self.bump().unwrap();
+                        nodes.push(Node::DisplayMath(children, open_span.merge(close.span)));
+                    } else {
+                        self.errors.push(
+                            Diagnostic::error("E031", "unclosed '\\[' (display math)")
+                            .with_span(diag_span(open_span)),
+                        );
+                        nodes.push(Node::DisplayMath(children, open_span));
+                    }
+                }
+
+                // A bare `\]` outside display math is a stray closer.
+                TokenKind::ControlSeq(ref name) if name == "]" => {
+                    self.errors.push(
+                        Diagnostic::error("E032", "stray '\\]' (no matching '\\[')")
+                        .with_span(diag_span(tok.span)),
+                    );
+                }
 
                 TokenKind::ControlSeq(name) => {
                     let cmd_span = tok.span; 
@@ -167,7 +200,7 @@ impl Parser {
 
                 TokenKind::BeginGroup => {
                     let open_span = tok.span;
-                    let children = self.parse_nodes(Some(&TokenKind::EndGroup));
+                    let children = self.parse_nodes(|k| matches!(k, TokenKind::EndGroup));
                     if self.peek_kind() == Some(&TokenKind::EndGroup) {
                         let close = self.bump().unwrap();
                         nodes.push(Node::Group(children, open_span.merge(close.span)));
@@ -183,7 +216,7 @@ impl Parser {
                 
                 TokenKind::MathShift => {
                     let open_span = tok.span;
-                    let children = self.parse_nodes(Some(&TokenKind::MathShift));
+                    let children = self.parse_nodes(|k| matches!(k, TokenKind::MathShift));
                     if self.peek_kind() == Some(&TokenKind::MathShift) {
                         let close = self.bump().unwrap();
                         nodes.push(Node::Math(children, open_span.merge(close.span)));
@@ -192,6 +225,7 @@ impl Parser {
                             Diagnostic::error("E030", "unclosed '$' (math mode)")
                                 .with_span(diag_span(open_span)),
                         );
+                        nodes.push(Node::Math(children, open_span));
                     }
                 }
                 // Everything else is left unhandled for now so skip it.
@@ -227,7 +261,7 @@ impl Parser {
     fn parse_mandatory_arg(&mut self) -> Arg {
         // Consume the opening brace, remembering its span for diagnostics.
         let open_span = self.bump().unwrap().span;
-        let children = self.parse_nodes(Some(&TokenKind::EndGroup));
+        let children = self.parse_nodes(|k| matches!(k, TokenKind::EndGroup));
         if self.peek_kind() == Some(&TokenKind::EndGroup) {
             self.bump();
         } else {
@@ -242,7 +276,7 @@ impl Parser {
     fn parse_optional_arg(&mut self) -> Arg {
         // Consume the opening `[`, remembering its span for diagnostics.
         let open_span = self.bump().unwrap().span;
-        let children = self.parse_nodes(Some(&TokenKind::Char(']')));
+            let children = self.parse_nodes(|k| matches!(k, TokenKind::Char(']')));
         if self.peek_kind() == Some(&TokenKind::Char(']')) {
             self.bump();
         } else {
@@ -345,7 +379,7 @@ mod tests {
         assert!(matches!(&args[0], Arg::Optional(children)
                 if matches!(&children[0], Node::Text(s, _) if s == "3")));
         assert!(matches!(&args[1], Arg::Mandatory(children)
-                if matches!(&children[0], Node::Text(s, _) if s== "27")));
+                if matches!(&children[0], Node::Text(s, _) if s == "27")));
     }
 
     #[test]
