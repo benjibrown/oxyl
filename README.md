@@ -30,3 +30,22 @@ cargo build
 cargo install oxyl 
 oxyl <file.tex>
 ```
+
+## Usage 
+
+```sh
+oxyl <file.tex>                 parse the file and report any errors 
+oxyl --dump-tokens <file.tex>   print every lexer token with its byte span 
+oxyl --dump-ast <file.tex>      print the parsed AST nodes 
+oxyl --help                     full flag list 
+```
+
+Diagnostics include a 1-based line/column and an awesome caret pointing at the offending span: 
+
+```
+error [E022]: unclosed optional argument
+  --> line 1:6
+  |
+1 | \sqrt[
+  |      ^
+```
