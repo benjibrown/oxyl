@@ -9,7 +9,6 @@
 //  - Every error carries a DiagSpan poiting at the token that triggered it 
 //  (the unmatched bracket or dollar sign) so the cli can render source 
 //  context without having to extract it from the message string :D
-// TODO - math specific structure ie atoms, scripts etc and display math (\[\])
 
 
 use oxyl_diagnostics::{DiagSpan, Diagnostic};
@@ -18,6 +17,12 @@ use oxyl_lexer::{Span, Token, TokenKind};
 fn diag_span(s: Span) -> DiagSpan {
     DiagSpan::new(s.start, s.end)
 }
+
+/// Stop predicate for `parse_nodes` when scanning the body of `\[ ... \]`.
+fn is_display_math_close(k: &TokenKind) -> bool {
+    matches!(k, TokenKind::Controlseq(s) if s == "]")
+}
+
 // --- 
 // AST Types 
 //
