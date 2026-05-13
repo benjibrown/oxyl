@@ -474,4 +474,20 @@ mod tests {
         assert!(matches!(&r.document.body[0], Node::Text(s, _) if s == "hello "));
         assert!(matches!(&r.document.body[1], Node::Math(_, _)));
     }
+
+    #[test]
+    fn display_math_simple() {
+        let r = parse("\\[x+1\\]");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        assert_eq!(r.document.body.len(), 1);
+        assert!(matches!(&r.document.body[0], Node::DisplayMath(children, _)
+            if matches!(&children[0], Node::Text(s, _) if s == "x+1")));
+    }
+
+    #[test]
+    fn display_math_with_command() {
+        let r = parse("\\[ \\sum_{i=0}^n i \\]");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        assert!(matches!(&r.document.body[0], Node::DisplayMath(_, _)));
+    }
 }
