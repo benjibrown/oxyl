@@ -339,7 +339,7 @@ mod tests {
         assert_eq!(name, "textbf");
         assert_eq!(args.len(), 1);
         assert!(matches!(&args[0], Arg::Mandatory(children)
-                if matches!(&children[0], Node::Text(s, _) if s == "hello")));
+            if matches!(&children[0], Node::Text(s, _) if s == "hello")));
     }
 
     #[test]
@@ -379,9 +379,9 @@ mod tests {
         assert_eq!(name, "sqrt");
         assert_eq!(args.len(), 2);
         assert!(matches!(&args[0], Arg::Optional(children)
-                if matches!(&children[0], Node::Text(s, _) if s == "3")));
+            if matches!(&children[0], Node::Text(s, _) if s == "3")));
         assert!(matches!(&args[1], Arg::Mandatory(children)
-                if matches!(&children[0], Node::Text(s, _) if s == "27")));
+            if matches!(&children[0], Node::Text(s, _) if s == "27")));
     }
 
     #[test]
@@ -422,7 +422,7 @@ mod tests {
         assert!(r.errors.is_empty());
         assert_eq!(r.document.body.len(), 1);
         assert!(matches!(&r.document.body[0], Node::Math(children, _)
-                if matches!(&children[0], Node::Text(s, _) if s == "x+1")));
+            if matches!(&children[0], Node::Text(s, _) if s == "x+1")));
     }
 
     #[test]
@@ -448,6 +448,9 @@ mod tests {
     
     #[test]
     fn parser_errors_carry_spans() {
+        // Every parser error must point at the offending opener so the CLI 
+        // can render the location from the diagnostic span instead of
+        // picking it ouf the message text.
         let cases = [
             "\\cmd{oops", // E021
             "\\cmd[oops", // E022
