@@ -10,7 +10,7 @@
 
 ## What is this?
 
-oxyl is a from-scratch LaTeX compiler. The goal is to be, produce helpful error messages, and eventually have proper package management built in rather than just being bolted on afterwards.
+oxyl is a from-scratch LaTeX compiler. The goal is to be fast, produce helpful error messages, and eventually have proper package management built in rather than just being bolted on afterwards.
 
 ## Goals
 - Parse and compile `.tex` files to PDF (i really want to get this done)
