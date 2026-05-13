@@ -6,7 +6,7 @@
 </div>
 
 
-**Status:** very early stage - workspace skeleton only, nothing to compile documents yet or produce an AST etc.
+**Status:** very early stage - workspace skeleton only, nothing to compile documents yet or produce an AST etc. Run with `--dump-tokens` or `--dump-ast` to see what oxyl is making of your file.
 
 ## What is this?
 
@@ -16,11 +16,45 @@ oxyl is a from-scratch LaTeX compiler. The goal is to be fast, produce helpful e
 - Parse and compile `.tex` files to PDF (i really want to get this done)
 - Incremental compilation - only reprocess what changed 
 - Clear error messages + source locations 
+- An `oxyl.toml` package manifest instead of the TEXMF mess
 
 ## Building 
 ```sh 
+git clone https://github.com/benjibrown/oxyl.git
 cargo build 
-cargo run 
+./target/release/oxyl
 ```
 
+## Installing from crates.io
+
+```
+cargo install oxyl 
+oxyl <file.tex>
+```
+
+## Usage 
+
+```sh
+oxyl <file.tex>                 parse the file and report any errors 
+oxyl --dump-tokens <file.tex>   print every lexer token with its byte span 
+oxyl --dump-ast <file.tex>      print the parsed AST nodes 
+oxyl --help                     full flag list 
+```
+
+Diagnostics include a 1-based line/column and an awesome caret pointing at the offending span: 
+
+```
+error [E022]: unclosed optional argument
+  --> line 1:6
+  |
+1 | \sqrt[
+  |      ^
+```
+
+## What's currently parsed
+- Plain text and paragraphs (blank lines)
+- Commands with optional and mandatory arguments: `\sqrt[3]{27}`
+- Brace groups `{ ... }`
+- Inline math `$ ... $`
+- Display math `\[ ... \]`
 
