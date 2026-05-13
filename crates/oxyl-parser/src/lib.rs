@@ -4,8 +4,10 @@
 //
 // - Commands greedily pick up [...] and {...} until the next token 
 // is neither of those.
-// - A pair of $ tokens wraps a math node, whose children are parsed 
-// with the same func as ordinary text. 
+// - A pair of $ tokens wraps a math node.
+// - A \[...\] pair wraps a display math node. Inline and display math children 
+// are parsed with the same machinery as ordinairy text;
+// will do atoms and scripts later - TODO
 //  - Every error carries a DiagSpan poiting at the token that triggered it 
 //  (the unmatched bracket or dollar sign) so the cli can render source 
 //  context without having to extract it from the message string :D
@@ -276,7 +278,7 @@ impl Parser {
     fn parse_optional_arg(&mut self) -> Arg {
         // Consume the opening `[`, remembering its span for diagnostics.
         let open_span = self.bump().unwrap().span;
-            let children = self.parse_nodes(|k| matches!(k, TokenKind::Char(']')));
+        let children = self.parse_nodes(|k| matches!(k, TokenKind::Char(']')));
         if self.peek_kind() == Some(&TokenKind::Char(']')) {
             self.bump();
         } else {
