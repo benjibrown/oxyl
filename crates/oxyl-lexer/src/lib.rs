@@ -187,8 +187,8 @@ impl<'src> Lexer<'src> {
                 // Blank line - consume remaining blank-line whitespace.
                 self.take_while(|ch| ch == '\n' || ch == ' ' || ch == '\t');
                 return Ok(Some(Token::new(
-                            TokenKind::ParagraphBreak,
-                            Span::new(start, self.pos),
+                        TokenKind::ParagraphBreak,
+                        Span::new(start, self.pos),
                 )));
             }
             // Single newline is just whitespace. 
@@ -198,10 +198,15 @@ impl<'src> Lexer<'src> {
         // Horizontal whitespace.
         if c == ' ' || c == '\t' {
             self.take_while(|ch| ch == ' ' || ch == '\t');
-                return Ok(Some(Token::new(TokenKind::Space, Span::new(start, self.pos))));
+            return Ok(Some(Token::new(TokenKind::Space, Span::new(start, self.pos))));
         }
 
         // Control sequences.
+        //
+        // TeX has two flavours - a control word like \foo is a \ + a run of 
+        // letters, and eats trailing spaces; a control symbol like \$, \\, \[..\]
+        // is exactly one letter (following the \) and does not eat spaces.
+        // Both share the ControlSeq token kind tho.
         if c == '\\' {
             self.bump();
             match self.peek() {
@@ -219,7 +224,7 @@ impl<'src> Lexer<'src> {
                 Some(sym) => {
                     self.bump();
                     return Ok(Some(Token::new(
-                        TokenKind::Char(sym),
+                        TokenKind::ControlSeq(sym.to_string()),
                         Span::new(start, self.pos),
                     )));
                 }
@@ -317,5 +322,13 @@ mod tests {
     #[test]
     fn lone_backslash_error() {
         assert!(lex("\\").has_errors());
+    }
+
+    #[test]
+    fn control_symbol_emits_control_seq() {
+        assert_eq!(kinds("\\$"), vec![TokenKind::ControlSeq("$".into())]);
+        assert_eq!(kinds("\\\\"), vec![TokenKind::ControlSeq("\\".into())]);
+        assert_eq!(kinds("\\#"), vec![TokenKind::ControlSeq("#".into())]);
+        assert_eq!(kinds("\\["), vec![TokenKind::ControlSeq("[".into())]);
     }
 }
