@@ -490,4 +490,16 @@ mod tests {
         assert!(r.errors.is_empty(), "{:?}", r.errors);
         assert!(matches!(&r.document.body[0], Node::DisplayMath(_, _)));
     }
+
+    #[test]
+    fn unclosed_display_math_produces_error() {
+        let r = parse("\\[ a + b");
+        assert!(r.errors.iter().any(|e| e.code == "E031"));
+    }
+
+    #[test]
+    fn stray_close_display_math_produces_error() {
+        let r = parse("oops \\] more");
+        assert!(r.errors.iter().any(|e| e.code == "E032"));
+    }
 }
