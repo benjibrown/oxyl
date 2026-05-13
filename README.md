@@ -6,7 +6,7 @@
 </div>
 
 
-**Status:** very early stage - workspace skeleton only, nothing to compile documents yet or produce an AST etc.
+**Status:** very early stage - workspace skeleton only, nothing to compile documents yet or produce an AST etc. Run with `--dump-tokens` or `--dump-ast` to see what oxyl is making of your file.
 
 ## What is this?
 
@@ -16,6 +16,7 @@ oxyl is a from-scratch LaTeX compiler. The goal is to be fast, produce helpful e
 - Parse and compile `.tex` files to PDF (i really want to get this done)
 - Incremental compilation - only reprocess what changed 
 - Clear error messages + source locations 
+- An `oxyl.toml` package manifest instead of the TEXMF mess
 
 ## Building 
 ```sh 
@@ -49,3 +50,11 @@ error [E022]: unclosed optional argument
 1 | \sqrt[
   |      ^
 ```
+
+## What's currently parsed
+- Plain text and paragraphs (blank lines)
+- Commands with optional and mandatory arguments: `\sqrt[3]{27}`
+- Brace groups `{ ... }`
+- Inline math `$ ... $`
+- Display math `\[ ... \]`
+
