@@ -512,4 +512,23 @@ mod tests {
         let r = parse("oops \\] more");
         assert!(r.errors.iter().any(|e| e.code == "E032"));
     }
+
+    #[test]
+    fn comment_preserved() {
+        let r = parse("% hello\nworld");
+        assert!(r.errors.is_empty());
+        assert!(matches!(&r.document.body[0], Node::Comment(s, _) if s == " hello"));
+        assert!(matches!(&r.document.body[1], Node::Text(s, _) if s == "world"));
+    }
+
+    #[test]
+    fn comment_inside_command_arg() {
+        let r = parse("\\textbf{foo % drop?\nbar}");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        if let Node::Command { args, .. } = &r.document.body[0] {
+            if let Arg::Mandatory(children) = &args[0] {
+                assert!(children.iter().any(|n| matches!(n, Node::Comment(_, _))));
+            } else { panic!("expected mandatory arg"); }
+        } else { panic!("expected command"); }
+    }
 }
