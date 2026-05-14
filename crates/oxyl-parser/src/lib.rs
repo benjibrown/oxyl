@@ -27,6 +27,31 @@ fn is_display_math_close(k: &TokenKind) -> bool {
     matches!(k, TokenKind::ControlSeq(s) if s == "]")
 }
 
+/// Stop predicate for `parse_nodes` when scanning the body of an environment.
+fn is_end_control_seq(k: &TokenKind) -> bool {
+    matches!(k, TokenKind::ControlSeq(s) if s == "end")
+}
+
+fn find_env_name(args: &[Arg]) -> Option<(usize, String)> {
+    for (i, arg) in args.iter().enumerate() {
+        if let Arg::Mandatory(children) = arg {
+            let mut name = String::new();
+            for child in children {
+                if let Node::Text(t, _) = child {
+                    name.push_str(t);
+                } else {
+                    return None;
+                }
+            }
+            let trimmed = name.trim().to_owned();
+            if !trimmed.is_empty() {
+                return Some((i, trimmed));
+            }
+        }
+    }
+    None 
+}
+
 // --- 
 // AST Types 
 //
@@ -70,6 +95,16 @@ pub enum Node {
     /// `%` and without the trailing newline - the span covers the whole 
     /// run, including both. Comments in AST since they can actually affect produced PDF.
     Comment(String, Span),
+
+    /// `\begin{name} ... \end{name}`. `args` is everything after the 
+    /// environment name (optionals and additional mandatory groups). `body`
+    /// holds the parsed children; the span also covers the entire construct.
+    Environment {
+        name: String,
+        args: Vec<Arg>,
+        body: Vec<Node>,
+        span: Span,
+    }
 }
 
 impl Node {
@@ -82,6 +117,7 @@ impl Node {
             Node::Math(_, s) => *s,
             Node::DisplayMath(_, s) => *s,
             Node::Comment(_, s) => *s,
+            Node::Environment{ span, .. } => *span,
         }
     }
 }
