@@ -1,5 +1,5 @@
 // oxyl-parser
-// 
+// TODO - put all this in docs
 // Builds a Document of Nodes from the lexer's token stream.
 //
 // - Commands greedily pick up [...] and {...} until the next token 
@@ -8,6 +8,8 @@
 // - A \[...\] pair wraps a display math node. Inline and display math children 
 // are parsed with the same machinery as ordinairy text;
 // will do atoms and scripts later - TODO
+// - Comments are preserved so source fidelity tools ie formatters and
+// linters can round-trip them!!
 //  - Every error carries a DiagSpan poiting at the token that triggered it 
 //  (the unmatched bracket or dollar sign) so the cli can render source 
 //  context without having to extract it from the message string :D
