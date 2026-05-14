@@ -63,6 +63,11 @@ pub enum Node {
 
     /// Display math: `\[ ... \]`. The span covers both delimiters.
     DisplayMath(Vec<Node>, Span),
+
+    /// A `% ...` line comment. THe string is the body without the leading 
+    /// `%` and without the trailing newline - the span covers the whole 
+    /// run, including both. Comments in AST since they can actually affect produced PDF.
+    Comment(String, Span),
 }
 
 impl Node {
@@ -74,6 +79,7 @@ impl Node {
             Node::Group(_, s) => *s,
             Node::Math(_, s) => *s,
             Node::DisplayMath(_, s) => *s,
+            Node::Comment(_, s) => *s,
         }
     }
 }
