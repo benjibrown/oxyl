@@ -32,6 +32,10 @@ fn is_end_control_seq(k: &TokenKind) -> bool {
     matches!(k, TokenKind::ControlSeq(s) if s == "end")
 }
 
+/// Find the first `Arg::Mandatory` whose children are all `Node::Text`,
+/// concatenate that text and return its index along with the trimmed name.
+/// This is how the environment name is recovered (either from the begin 
+/// statement or the end one).
 fn find_env_name(args: &[Arg]) -> Option<(usize, String)> {
     for (i, arg) in args.iter().enumerate() {
         if let Arg::Mandatory(children) = arg {
@@ -104,7 +108,7 @@ pub enum Node {
         args: Vec<Arg>,
         body: Vec<Node>,
         span: Span,
-    }
+    },
 }
 
 impl Node {
@@ -208,6 +212,16 @@ impl Parser {
                 
                 TokenKind::Comment(body) => {
                     nodes.push(Node::Comment(body, tok.span));
+                }
+                
+                // A bare \end outside an environment is a stray closer. :)
+                TokenKind::ControlSeq(ref name) if name == "end" => {
+                    self.errors.push(
+                        Diagnostic::error("E043", "stray `\\end' (no matching '\\begin')")
+                            .with_span(diag_span(tok.span)),
+                    );
+                        // Eat its name arg so we don't cause a slippery slope of errors lol.
+                    let _ = self.parse_args();
                 }
 
                 // `\[` opens display math. 
