@@ -57,4 +57,18 @@ error [E022]: unclosed optional argument
 - Brace groups `{ ... }`
 - Inline math `$ ... $`
 - Display math `\[ ... \]`
+- Line comments (preserved in the AST so source-fidelity tools can access them)
+
+## Diagnostic Codes 
+
+| Code | Where  | Meaning |
+|------|--------|--------------------------------------|
+| E010 | lexer  | lone backslash / non-ASCII character |
+| E020 | parser | unclosed `{`                         |
+| E021 | parser | unclosed mandatory argument          |
+| E022 | parser | unclosed optional argument           |
+| E030 | parser | unclosed `$` (inline math)           |
+| E031 | parser | unclosed `\[` (display math)         |
+| E032 | parser | stray `\]` (no matching `\[`)        |
+
 
