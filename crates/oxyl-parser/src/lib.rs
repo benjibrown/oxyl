@@ -223,10 +223,10 @@ impl Parser {
                 // A bare \end outside an environment is a stray closer. :)
                 TokenKind::ControlSeq(ref name) if name == "end" => {
                     self.errors.push(
-                        Diagnostic::error("E043", "stray `\\end' (no matching '\\begin')")
+                        Diagnostic::error("E043", "stray '\\end' (no matching '\\begin')")
                             .with_span(diag_span(tok.span)),
                     );
-                        // Eat its name arg so we don't cause a slippery slope of errors lol.
+                    // Eat its name arg so we don't cause a slippery slope of errors lol.
                     let _ = self.parse_args();
                 }
 
@@ -655,4 +655,6 @@ mod tests {
             } else { panic!("expected mandatory arg"); }
         } else { panic!("expected command"); }
     }
+
+    // TODO - TESTS FOR ENVIRONMENTS!!!!!!
 }
