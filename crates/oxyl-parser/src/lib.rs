@@ -167,6 +167,10 @@ impl Parser {
                 TokenKind::ParagraphBreak => {
                     nodes.push(Node::ParagraphBreak(tok.span));
                 }
+                
+                TokenKind::Comment(body) => {
+                    nodes.push(Node::Comment(body, tok.span));
+                }
 
                 // `\[` opens display math. 
                 TokenKind::ControlSeq(ref name) if name == "[" => {
@@ -178,7 +182,7 @@ impl Parser {
                     } else {
                         self.errors.push(
                             Diagnostic::error("E031", "unclosed '\\[' (display math)")
-                            .with_span(diag_span(open_span)),
+                                .with_span(diag_span(open_span)),
                         );
                         nodes.push(Node::DisplayMath(children, open_span));
                     }
@@ -188,7 +192,7 @@ impl Parser {
                 TokenKind::ControlSeq(ref name) if name == "]" => {
                     self.errors.push(
                         Diagnostic::error("E032", "stray '\\]' (no matching '\\[')")
-                        .with_span(diag_span(tok.span)),
+                            .with_span(diag_span(tok.span)),
                     );
                 }
 
