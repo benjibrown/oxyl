@@ -213,7 +213,13 @@ impl Parser {
                 TokenKind::Comment(body) => {
                     nodes.push(Node::Comment(body, tok.span));
                 }
-                
+               
+                // begin{name} opens an environment.
+                TokenKind::ControlSeq(ref name) if name == "begin" => {
+                    let env = self.parse_environment(tok.span);
+                    nodes.push(env);
+                }
+
                 // A bare \end outside an environment is a stray closer. :)
                 TokenKind::ControlSeq(ref name) if name == "end" => {
                     self.errors.push(
@@ -320,6 +326,7 @@ impl Parser {
             }
         }
         args
+
     }    
 
     fn parse_mandatory_arg(&mut self) -> Arg {
@@ -335,6 +342,71 @@ impl Parser {
             );
         }
         Arg::Mandatory(children)
+    }
+
+    /// Parse `\begin{name} body \end{name}`. The opening `\begin` token has
+    /// already been consumed; `begin_span` is its span.
+    fn parse_environment(&mut self, begin_span: Span) -> Node {
+        let mut args = self.parse_args();
+
+        // First mandatory arg is the environment name. Without one we
+        // record the error and fall back to a plain cmd so the AST 
+        // still contains atleast something useful
+        let (name_idx, env_name) = match find_env_name(&args) {
+            Some(x) => x,
+            None => {
+                self.errors.push(
+                    Diagnostic::error("E040", "'\\begin' missing environment name")
+                        .with_span(diag_span(begin_span)),
+                );
+                return Node::Command {
+                    name: "begin".to_owned(),
+                    args,
+                    span: begin_span,
+                };
+            }
+        };
+        args.remove(name_idx);
+
+        let body = self.parse_nodes(is_end_control_seq);
+
+        // Try consume the matching \end
+        let close_span = if matches!(self.peek_kind(), Some(TokenKind::ControlSeq(s)) if s == "end") {
+            let end_tok = self.bump().unwrap();
+            let end_args = self.parse_args();
+            let close_name = find_env_name(&end_args).map(|(_, n)| n);
+
+            if close_name.as_deref() != Some(env_name.as_str()) {
+                self.errors.push(
+                    Diagnostic::error("E042", format!(
+                            "'\\end{{{}}}' does not match '\\begin{{{}}}'",
+                            close_name.as_deref().unwrap_or(""), env_name,
+                    ))
+                    .with_span(diag_span(end_tok.span)),
+                );
+            }
+
+            // Stretch the span to the last argument of \end (if any)
+            end_args.last()
+                .and_then(|a| match a {
+                    Arg::Mandatory(c) | Arg::Optional(c) => c.last().map(|n| n.span()),
+                })
+                .map(|s| end_tok.span.merge(s))
+                .unwrap_or(end_tok.span)
+        } else {
+            self.errors.push(
+                Diagnostic::error("E041", format!("unclosed '\\begin{{{}}}'", env_name))
+                    .with_span(diag_span(begin_span)),
+            );
+            body.last().map(|n| n.span()).unwrap_or(begin_span)
+        };
+
+        Node::Environment {
+            name: env_name, 
+            args,
+            body,
+            span: begin_span.merge(close_span),
+        }
     }
 
     fn parse_optional_arg(&mut self) -> Arg {
