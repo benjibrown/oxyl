@@ -44,11 +44,11 @@ oxyl --help                     full flag list
 Diagnostics include a 1-based line/column and an awesome caret pointing at the offending span: 
 
 ```
-error [E022]: unclosed optional argument
-  --> line 1:6
+error [E020]: unclosed '{'
+  --> main.tex:1:5
   |
-1 | \sqrt[
-  |      ^
+1 | foo {bar
+  |     ^
 ```
 
 ## What's currently parsed
