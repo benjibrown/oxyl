@@ -48,8 +48,9 @@ fn main() {
         }
     };
 
-    // Build the source view once so every diagnostic shares its line index.
-    let source = Source::new(&src);
+    // Build the source view once so every diagnostic shares its line index
+    // and so renderings include the filename for awesome diagnostics.
+    let source = Source::with_name(&src, &path);
 
     // --- Lex. --- 
     let lex_result = Lexer::new(&src).tokenise();

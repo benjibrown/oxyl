@@ -90,7 +90,7 @@ impl<'a> Source<'a> {
                 line_starts.push(i + 1);
             }
         }
-        Self { text, name:None, line_starts }
+        Self { text, name: None, line_starts }
     }
 
     /// Build a `Source` whose rendered diagnostics include `name` (usually
@@ -178,9 +178,15 @@ impl Diagnostic {
         let carets = "^".repeat(caret_len);
         let blank_gutter = " ".repeat(gutter_w);
 
+        // --> file:line:col if the source carries a name, else line:col.
+        let location = match source.name() {
+            Some(name) => format!("{name}:{line}:{col}"),
+            None => format!("line {line}:{col}"),
+        };
+
         format!(
             "{sev} [{code}]: {msg}\n\
-             {blank} --> line {line}:{col}\n\
+             {blank} --> {location}\n\
              {blank} |\n\
              {line:>w$} | {line_text}\n\
              {blank} | {pad}{carets}",
@@ -188,8 +194,8 @@ impl Diagnostic {
             code = self.code,
             msg = self.message,
             blank = blank_gutter,
+            location = location,
             line = line, 
-            col = col,
             w = gutter_w,
             line_text = line_text,
             pad = pad,
