@@ -57,6 +57,7 @@ error [E022]: unclosed optional argument
 - Brace groups `{ ... }`
 - Inline math `$ ... $`
 - Display math `\[ ... \]`
+- Environments `\begin{name} ... \end{name}` (nesting works; extra args like the column spec in `\begin{tabular}{cc}` are kept on the AST node)
 - Line comments (preserved in the AST so source-fidelity tools can access them)
 
 ## Diagnostic Codes 
@@ -70,5 +71,7 @@ error [E022]: unclosed optional argument
 | E030 | parser | unclosed `$` (inline math)           |
 | E031 | parser | unclosed `\[` (display math)         |
 | E032 | parser | stray `\]` (no matching `\[`)        |
-
-
+| E040 | parser | `\begin` missing environment name    |
+| E041 | parser | unclosed `\begin{...}`               |
+| E042 | parser | `\end{b}` does not match  `\begin{a}` |
+| E043 | parser | stray `\end` (no matching `\begin`)
