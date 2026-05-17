@@ -656,5 +656,46 @@ mod tests {
         } else { panic!("expected command"); }
     }
 
-    // TODO - TESTS FOR ENVIRONMENTS!!!!!!
+    #[test]
+    fn environment_simple() {
+        let r = parse("\\begin{quote}hello\\end{quote}");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        if let Node::Environment { name, args, body, .. } = &r.document.body[0] {
+            assert_eq!(name, "quote");
+            assert!(args.is_empty());
+            assert!(matches!(&body[0], Node::Text(s, _) if s == "hello"));
+        } else {
+            panic!("expected environment, got {:?}", r.document.body[0]);
+        }
+    }
+    
+    #[test]
+    fn environment_with_starred_name() {
+        let r = parse("\\begin{equation*}x = 1\\end{equation*}");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        assert!(matches!(&r.document.body[0], Node::Environment { name, .. } if name == "equation*"));
+    }
+
+    #[test]
+    fn environment_with_extra_args() {
+        // \begin{tabular}{cc} keeps {cc} as env arg, not as the name.
+        let r = parse("\\begin{tabular}{cc}A & B\\end{tabular}");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        if let Node::Environment { name, args, .. } = &r.document.body[0] {
+            assert_eq!(name, "tabular");
+            assert_eq!(args.len(), 1);
+            assert!(matches!(&args[0], Arg::Mandatory(_)));
+        } else { panic!("expected environment"); }
+    }
+
+    #[test]
+    fn nested_environments() {
+        let r = parse("\\begin{outer}\\begin{inner}x\\end{inner}\\end{outer}");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        if let Node::Environment { name, body, .. } = &r.document.body[0] {
+            assert_eq!(name, "outer");
+            assert!(matches!(&body[0], Node::Environment {name, .. } if name == "inner"));
+        } else { panic!("expected outer environment"); }
+    }
+
 }
