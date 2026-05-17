@@ -326,4 +326,23 @@ mod tests {
         // Without a span, render should match plain Display.
         assert_eq!(d.render(&src), d.to_string());
     }
+
+    #[test]
+    fn render_uses_source_name() {
+        let src = Source::with_name("foo {bar\n", "main.tex");
+        let d = Diagnostic::error("E020", "unclosed '{'")
+            .with_span(DiagSpan::new(4, 5));
+        let out = d.render(&src);
+        assert!(out.contains("main.tex:1:5"), "got: {out}");
+    }
+
+    #[test]
+    fn render_drops_name_prefix_when_unnamed() {
+        let src = Source::new("foo {bar\n");
+        let d = Diagnostic::error("E020", "unclosed '{'")
+            .with_span(DiagSpan::new(4, 5));
+        let out = d.render(&src);
+        assert!(out.contains("line 1:5"));
+        assert!(!out.contains("foo {bar:"), "name should not leak");
+    }
 }
