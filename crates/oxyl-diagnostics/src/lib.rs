@@ -74,12 +74,15 @@ pub struct Diagnostic {
 /// Construct once per file; the line table is built upfront so that 
 /// repeated `line_col` lookups (one per diagnostic) aren't super slow
 /// I think O(log lines) - will fact check this later.
-pub struct Source <'a> {
+/// An optional `name` (typically the file path) can be included 
+/// and rendered in diagnostics as `--> name:line:col`.
+pub struct Source<'a> {
     text: &'a str,
+    name: Option<String>,
     line_starts: Vec<usize>,
 }
 
-impl<'a> Source <'a> {
+impl<'a> Source<'a> {
     pub fn new(text: &'a str) -> Self {
         let mut line_starts = vec![0];
         for (i, b) in text.bytes().enumerate() {
@@ -87,7 +90,20 @@ impl<'a> Source <'a> {
                 line_starts.push(i + 1);
             }
         }
-        Self { text, line_starts }
+        Self { text, name:None, line_starts }
+    }
+
+    /// Build a `Source` whose rendered diagnostics include `name` (usually
+    /// a file path) in the location header.
+    pub fn with_name(text: &'a str, name: impl Into<String>) -> Self {
+        let mut s = Self::new(text);
+        s.name = Some(name.into());
+        s
+    }
+
+    /// The display name attached to this source, if any.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
     }
     
     /// Convert a byte offset into a 1-based `(line, column)`.
