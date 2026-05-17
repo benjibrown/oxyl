@@ -698,4 +698,27 @@ mod tests {
         } else { panic!("expected outer environment"); }
     }
 
+    #[test]
+    fn mismatched_end_produces_error() {
+        let r = parse("\\begin{a}x\\end{b}");
+        assert!(r.errors.iter().any(|e| e.code == "E042"));
+    }
+
+    #[test]
+    fn unclosed_begin_produces_error() {
+        let r = parse("\\begin{a}body");
+        assert!(r.errors.iter().any(|e| e.code == "E041"));
+    }
+
+    #[test]
+    fn stray_end_produces_error() {
+        let r = parse("\\end{a}");
+        assert!(r.errors.iter().any(|e| e.code == "E043"));
+    }
+
+    #[test]
+    fn begin_without_name_produces_error() {
+        let r = parse("\\begin foo");
+        assert!(r.errors.iter().any(|e| e.code == "E040"));
+    }
 }
