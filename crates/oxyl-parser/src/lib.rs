@@ -100,6 +100,13 @@ pub enum Node {
     /// run, including both. Comments in AST since they can actually affect produced PDF.
     Comment(String, Span),
 
+    /// A `&` column separator inside `tabular`/`array`/`align` and other environments.
+    AlignTab(Span),
+
+    /// A `~` - a non-breaking space. Acts like a regular space for layout
+    /// but forbids a line break at this point.
+    Tilde(Span),
+
     /// `\begin{name} ... \end{name}`. `args` is everything after the 
     /// environment name (optionals and additional mandatory groups). `body`
     /// holds the parsed children; the span also covers the entire construct.
@@ -121,6 +128,8 @@ impl Node {
             Node::Math(_, s) => *s,
             Node::DisplayMath(_, s) => *s,
             Node::Comment(_, s) => *s,
+            Node::AlignTab(s) => *s,
+            Node::Tilde(s) => *s,
             Node::Environment{ span, .. } => *span,
         }
     }
@@ -298,6 +307,10 @@ impl Parser {
                         nodes.push(Node::Math(children, open_span));
                     }
                 }
+
+                TokenKind::AlignTab => nodes.push(Node::AlignTab(tok.span)),
+                TokenKind::Tilde => nodes.push(Node::Tilde(tok.span)),
+
                 // Everything else is left unhandled for now so skip it.
                 _ => {}
             }
