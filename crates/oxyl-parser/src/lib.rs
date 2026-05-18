@@ -734,4 +734,16 @@ mod tests {
         let r = parse("\\begin foo");
         assert!(r.errors.iter().any(|e| e.code == "E040"));
     }
+
+    #[test]
+    fn align_tab_becomes_node() {
+        let r = parse("a & b");
+        assert!(r.errors.is_empty());
+        let kinds: Vec<_> = r.document.body.iter().map(|n| match n {
+            Node::Text(s, _) => format!("T({s})"),
+            Node::AlignTab(_) => "&".to_owned(),
+            other => format!("{other:?}"),
+        }).collect();
+        assert_eq!(kinds, vec!["T(a )", "&", "T( b)"]);
+    }
 }
