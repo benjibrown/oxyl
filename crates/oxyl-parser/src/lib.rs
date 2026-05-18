@@ -746,4 +746,21 @@ mod tests {
         }).collect();
         assert_eq!(kinds, vec!["T(a )", "&", "T( b)"]);
     }
+
+    #[test]
+    fn tilde_becomes_node() {
+        let r = parse("oxyl.~isthebest");
+        assert!(r.errors.is_empty());
+        // Order should be oxyl. (text), tilde, isthebest (text)
+        assert!(matches!(&r.document.body[1], Node::Tilde(_)));
+    }
+
+    #[test]
+    fn align_tab_inside_tabular_body() {
+        let r = parse("\\begin{tabular}{cc}A & B\\end{tabular}");
+        assert!(r.errors.is_empty(), "{:?}", r.errors);
+        if let Node::Environment { body, .. } = &r.document.body[0] {
+            assert!(body.iter().any(|n| matches!(n, Node::AlignTab(_))));
+        } else { panic!("expected environment"); }
+    }
 }
