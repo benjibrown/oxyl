@@ -58,6 +58,7 @@ error [E020]: unclosed '{'
 - Inline math `$ ... $`
 - Display math `\[ ... \]`
 - Environments `\begin{name} ... \end{name}` (nesting works; extra args like the column spec in `\begin{tabular}{cc}` are kept on the AST node)
+- `&` (alignment tab, used between cells in `tabular`) and `~` (non-breaking space) - both survive into the AST as their own nodes.
 - Line comments (preserved in the AST so source-fidelity tools can access them)
 
 ## Diagnostic Codes 
