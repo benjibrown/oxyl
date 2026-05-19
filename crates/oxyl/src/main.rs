@@ -2,6 +2,10 @@ use oxyl_diagnostics::{Diagnostic, Source};
 use oxyl_lexer::Lexer;
 use oxyl_parser::Parser;
 
+// unix convetion (sysexists.h) - 0 for success, 1 for the operation 
+// itself failing, 2 for the user invoking anything incorrectly. 
+// Split out so shell scripts can tell if you had a syntax err in ur file 
+// without having to parse stderr.
 const EXIT_OK: i32 = 0;
 const EXIT_COMPILE: i32 = 1;
 const EXIT_USAGE: i32 = 2;
@@ -39,6 +43,7 @@ fn main() {
             }
         }
     }
+
 
     let path = match file {
         Some(p) => p,
