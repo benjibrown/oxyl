@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "oxyl"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "oxyl-diagnostics",
  "oxyl-lexer",
@@ -13,18 +13,18 @@ dependencies = [
 
 [[package]]
 name = "oxyl-diagnostics"
-version = "0.1.11"
+version = "0.1.12"
 
 [[package]]
 name = "oxyl-lexer"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "oxyl-diagnostics",
 ]
 
 [[package]]
 name = "oxyl-parser"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "oxyl-diagnostics",
  "oxyl-lexer",
