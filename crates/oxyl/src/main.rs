@@ -80,10 +80,7 @@ fn main() {
         for tok in &lex_result.tokens {
             println!("  {:>6}..{:<6}  {}", tok.span.start, tok.span.end, tok.kind);
         }
-        if had_error {
-            std::process::exit(if had_error { EXIT_COMPILE } else { EXIT_OK });
-        }
-        return;
+        std::process::exit(if had_error { EXIT_COMPILE } else { EXIT_OK });
     }
 
     // Parse.
@@ -99,10 +96,7 @@ fn main() {
         for node in &parse_result.document.body {
             println!("  {node:?}");
         }
-        if had_error {
-            std::process::exit(if had_error { EXIT_COMPILE} else { EXIT_OK });
-        }
-        return;
+        std::process::exit(if had_error { EXIT_COMPILE} else { EXIT_OK });
     }
     
     if had_error {
