@@ -38,8 +38,11 @@ oxyl <file.tex>
 oxyl <file.tex>                 parse the file and report any errors 
 oxyl --dump-tokens <file.tex>   print every lexer token with its byte span 
 oxyl --dump-ast <file.tex>      print the parsed AST nodes 
+oxyl --version                  print the oxyl version
 oxyl --help                     full flag list 
 ```
+
+All exit codes follow the usual Unix convention: `0` on success, `1` if the file fails to lex or parse (or cannot be read), `2` if oxyl was invoked correctly (unknown flag, missing or extra arguments).
 
 Diagnostics include a 1-based line/column and an awesome caret pointing at the offending span: 
 
@@ -58,6 +61,7 @@ error [E020]: unclosed '{'
 - Inline math `$ ... $`
 - Display math `\[ ... \]`
 - Environments `\begin{name} ... \end{name}` (nesting works; extra args like the column spec in `\begin{tabular}{cc}` are kept on the AST node)
+- `&` (alignment tab, used between cells in `tabular`) and `~` (non-breaking space) - both survive into the AST as their own nodes.
 - Line comments (preserved in the AST so source-fidelity tools can access them)
 
 ## Diagnostic Codes 
