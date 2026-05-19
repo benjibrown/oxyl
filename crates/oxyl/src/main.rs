@@ -109,7 +109,7 @@ fn main() {
 }
 
 fn print_help() {
-    println!("oxyl - a LaTeX compiler (work in progress)");
+    println!("oxyl {} - a LaTeX compiler (work in progress)", env!("CARGO_PKG_VERSION"));
     println!();
     println!("USAGE:");
     println!("  oxyl [FLAGS] <file.tex>");
