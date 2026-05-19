@@ -18,6 +18,10 @@ fn main() {
                 print_help();
                 return;
             }
+            "--version" | "-V" => {
+                println!("oxyl {}", env!("CARGO_PKG_VERSION"));
+                return;
+            }
             other if other.starts_with('-') => {
                 eprintln!("oxyl: unknown flag '{other}'. Try --help.");
                 std::process::exit(1);
@@ -110,6 +114,7 @@ fn print_help() {
     println!("FLAGS:");
     println!("  --dump-tokens   Print every token with its byte span, then exit");
     println!("  --dump-ast      Print the parsed AST nodes, then exit");
+    println!("  --version, -V   Print the oxyl version and exit");
     println!("  --help, -h      Print this help message");
 }
 
