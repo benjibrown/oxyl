@@ -2,12 +2,16 @@ use oxyl_diagnostics::{Diagnostic, Source};
 use oxyl_lexer::Lexer;
 use oxyl_parser::Parser;
 
+const EXIT_OK: i32 = 0;
+const EXIT_COMPILE: i32 = 1;
+const EXIT_USAGE: i32 = 2;
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     // Parse flags and positional argument.
     let mut dump_tokens = false;
-    let mut dump_ast = false; 
+    let mut dump_ast = false;
     let mut file: Option<String> = None;
 
     for arg in args.iter().skip(1) {
@@ -24,12 +28,12 @@ fn main() {
             }
             other if other.starts_with('-') => {
                 eprintln!("oxyl: unknown flag '{other}'. Try --help.");
-                std::process::exit(1);
+                std::process::exit(EXIT_USAGE);
             }
             other => {
                 if file.is_some() {
                     eprintln!("oxyl: too many positional arguments. Try --help.");
-                    std::process::exit(1);
+                    std::process::exit(EXIT_USAGE);
                 }
                 file = Some(other.to_owned());
             }
@@ -40,7 +44,7 @@ fn main() {
         Some(p) => p,
         None => {
             print_help();
-            std::process::exit(1);
+            std::process::exit(EXIT_USAGE);
         }
     };
 
@@ -48,12 +52,12 @@ fn main() {
         Ok(s) => s,
         Err(e) => {
             eprintln!("oxyl: could not read {path}: {e}");
-            std::process::exit(1);
+            std::process::exit(EXIT_COMPILE);
         }
     };
 
     // Build the source view once so every diagnostic shares its line index
-    // and so renderings include the filename for awesome diagnostics.
+    // and so renderings include the filename to get --> file:line:col
     let source = Source::with_name(&src, &path);
 
     // --- Lex. --- 
@@ -72,7 +76,7 @@ fn main() {
             println!("  {:>6}..{:<6}  {}", tok.span.start, tok.span.end, tok.kind);
         }
         if had_error {
-            std::process::exit(1);
+            std::process::exit(if had_error { EXIT_COMPILE } else { EXIT_OK });
         }
         return;
     }
@@ -91,13 +95,13 @@ fn main() {
             println!("  {node:?}");
         }
         if had_error {
-            std::process::exit(1);
+            std::process::exit(if had_error { EXIT_COMPILE} else { EXIT_OK });
         }
         return;
     }
     
     if had_error {
-        std::process::exit(1);
+        std::process::exit(EXIT_COMPILE);
     }
 
     // Success: print a brief summary.
