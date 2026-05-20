@@ -8,5 +8,5 @@ repository.workspace = true
 description = "Parser and AST types for oxyl"
 
 [dependencies]
-oxyl-lexer = { path = "../oxyl-lexer", version = "0.1.12" } 
-oxyl-diagnostics = { path = "../oxyl-diagnostics", version = "0.1.12" } 
+oxyl-lexer = { path = "../oxyl-lexer", version = "0.1.13" } 
+oxyl-diagnostics = { path = "../oxyl-diagnostics", version = "0.1.13" } 
