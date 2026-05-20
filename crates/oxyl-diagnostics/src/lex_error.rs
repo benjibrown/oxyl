@@ -3,7 +3,7 @@
 /// Stored inside [`LexResult`] so the caller can handle all the errors after 
 /// tokenisation rather than stopping at the first problem.
 
-use crate::{DiagSpan, Diagnostic}
+use crate::{DiagSpan, Diagnostic};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LexError {

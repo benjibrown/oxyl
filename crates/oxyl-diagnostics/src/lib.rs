@@ -1,13 +1,18 @@
 // oxyl-diagnostics 
 // 
-// Shared Severity, Diagnostic and lex error types used across the other crates.
-// Kept small so its at bottom of dep. graph.
+// Shared severity and diagnostic and lex error types used across 
+// the other oxyl crates. sits at bottom of the dep graph :)
 //
-//
-// The source helper maps byte spans to 1 based line/col and lets 
-// the Diagnostic::Render produce a caret-style listing the CLI shows.
-// Display keeps workinf without a source for callers that dont have one too 
-// (tests, lib users etc).
+// source (byte offset to line/col mapping) in source, conversions
+// done in LexError and its Into<Diagnostic> conversion is done too.
+// core diag/diagpspan and severity stuff is chilling here too - which 
+// produces the error output with that awesome caret (fyi a caret is ^)
+
+mod source; 
+mod lex_error;
+
+pub use source::Source;
+pub use lex_error::LexError;
 
 /// How serious a diagnostic is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,73 +69,6 @@ pub struct Diagnostic {
     pub source_hint: Option<String>,
 }
 
-// --- 
-// Source - byte offset to line/col map 
-//
-
-
-/// A view of source text with a precomputed line index.
-///
-/// Construct once per file; the line table is built upfront so that 
-/// repeated `line_col` lookups (one per diagnostic) aren't super slow
-/// I think O(log lines) - will fact check this later.
-/// An optional `name` (typically the file path) can be included 
-/// and rendered in diagnostics as `--> name:line:col`.
-pub struct Source<'a> {
-    text: &'a str,
-    name: Option<String>,
-    line_starts: Vec<usize>,
-}
-
-impl<'a> Source<'a> {
-    pub fn new(text: &'a str) -> Self {
-        let mut line_starts = vec![0];
-        for (i, b) in text.bytes().enumerate() {
-            if b == b'\n' {
-                line_starts.push(i + 1);
-            }
-        }
-        Self { text, name: None, line_starts }
-    }
-
-    /// Build a `Source` whose rendered diagnostics include `name` (usually
-    /// a file path) in the location header.
-    pub fn with_name(text: &'a str, name: impl Into<String>) -> Self {
-        let mut s = Self::new(text);
-        s.name = Some(name.into());
-        s
-    }
-
-    /// The display name attached to this source, if any.
-    pub fn name(&self) -> Option<&str> {
-        self.name.as_deref()
-    }
-    
-    /// Convert a byte offset into a 1-based `(line, column)`.
-    ///
-    /// Columns are byte-counted; the lexer rejects non-ASCII, so this 
-    /// matches what a user would expect from any ASCII editor.
-    pub fn line_col(&self, byte: usize) -> (usize, usize) {
-        let line_idx = match self.line_starts.binary_search(&byte) {
-            Ok(i) => i,
-            Err(i) => i.saturating_sub(1),
-        };
-        let line_start = self.line_starts[line_idx];
-        let col = byte.min(self.text.len()) - line_start;
-        (line_idx + 1, col + 1)
-    }
-    
-    /// Return the text of a 1-based line, without the trailing newline.
-    pub fn line_text(&self, line: usize) -> &str {
-        let idx = line.saturating_sub(1).min(self.line_starts.len() - 1);
-        let start = self.line_starts[idx];
-        let end = self.line_starts.get(idx + 1)
-            .map(|&n| n.saturating_sub(1))
-            .unwrap_or(self.text.len());
-        &self.text[start..end.min(self.text.len())]
-    }
-}
-
 impl Diagnostic {
     pub fn error(code: &'static str, message: impl Into<String>) -> Self {
         Self { 
@@ -161,7 +99,11 @@ impl Diagnostic {
         self.source_hint = Some(hint.into());
         self 
     }
+    
 
+    /// Render the diagnostic with a source listing and a caret under 
+    /// the span that actually caused it. If the diagnostic has no span,
+    /// falls back to `Display` representation.
     pub fn render(&self, source: &Source) -> String {
         let span = match self.span {
             Some(s) => s,
@@ -172,13 +114,13 @@ impl Diagnostic {
         let line_text = source.line_text(line);
         let gutter_w = line.to_string().len();
         let pad = " ".repeat(col.saturating_sub(1));
-        // Clamp the caret length so it never overflows the displayed line.
+        // clamp the caret length so it never overflows the displayed line.
         let visible_room = line_text.len().saturating_sub(col.saturating_sub(1));
         let caret_len = (span.end - span.start).max(1).min(visible_room.max(1));
         let carets = "^".repeat(caret_len);
         let blank_gutter = " ".repeat(gutter_w);
 
-        // --> file:line:col if the source carries a name, else line:col.
+        // --> file:line:col if the source carries a name, else line:col
         let location = match source.name() {
             Some(name) => format!("{name}:{line}:{col}"),
             None => format!("line {line}:{col}"),
@@ -214,42 +156,6 @@ impl std::fmt::Display for Diagnostic {
             write!(f, "\n  | {hint}")?;
         }
         Ok(())
-    }
-}
-
-/// An error produced during lexing.
-///
-/// Stored inside [`LexResult`] so the caller can handle all the errors after 
-/// tokenisation rather than stopping at the first problem.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum LexError {
-    /// A lone backslash at the very end of the file with nothing after it.
-    UnexpectedEndAfterBackslash { pos: usize },
-    /// A UTF-8 character outside the ASCII range was encountered. Full 
-    /// Unicode support is planned; for now we record the byte position.
-    NonAsciiChar { pos: usize, ch: char },
-}
-
-impl std::fmt::Display for LexError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LexError::UnexpectedEndAfterBackslash { pos } => {
-                write!(f, "unexpected end of input after '\\' at byte {pos}")
-            }
-            LexError::NonAsciiChar { pos, ch } => {
-                write!(f, "non-ASCII character '{ch}' at byte {pos} (Unicode support coming soon!)")
-            }
-        }
-    }
-}
-
-impl From<LexError> for Diagnostic {
-    fn from(e: LexError) -> Self {
-        let span = match e {
-            LexError::UnexpectedEndAfterBackslash { pos } => DiagSpan::new(pos, pos + 1),
-            LexError::NonAsciiChar {pos, .. } => DiagSpan::new(pos, pos + 1),
-        };
-        Diagnostic::error("E010", e.to_string()).with_span(span)
     }
 }
 
