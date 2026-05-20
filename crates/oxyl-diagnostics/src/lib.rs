@@ -10,9 +10,11 @@
 
 mod source; 
 mod lex_error;
+mod style;
 
 pub use source::Source;
 pub use lex_error::LexError;
+pub use style::Style;
 
 /// How serious a diagnostic is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -103,8 +105,14 @@ impl Diagnostic {
 
     /// Render the diagnostic with a source listing and a caret under 
     /// the span that actually caused it. If the diagnostic has no span,
-    /// falls back to `Display` representation.
+    /// falls back to `Display` representation. Output has no escape codes 
+    /// (not styled) - used if writing out to a file or pipe :D
     pub fn render(&self, source: &Source) -> String {
+        self.render_styled(source, Style::Plain)
+    }
+
+    /// 
+    pub fn render_styled(&self, source: &Source, style: Style) -> String {
         let span = match self.span {
             Some(s) => s,
             None => return self.to_string(),
@@ -117,7 +125,7 @@ impl Diagnostic {
         // clamp the caret length so it never overflows the displayed line.
         let visible_room = line_text.len().saturating_sub(col.saturating_sub(1));
         let caret_len = (span.end - span.start).max(1).min(visible_room.max(1));
-        let carets = "^".repeat(caret_len);
+        let carets_raw = "^".repeat(caret_len);
         let blank_gutter = " ".repeat(gutter_w);
 
         // --> file:line:col if the source carries a name, else line:col
@@ -126,22 +134,27 @@ impl Diagnostic {
             None => format!("line {line}:{col}"),
         };
 
+        // I knew this would be needed thanks to dennis lol but basically
+        // the width of line in the gutter needs to be set before we paint it,
+        // because when its wrapped in escape codes, the byte length wont match 
+        // the visible width :(
+        let line_num_padded = format!("{line:>w$}", line = line, w = gutter_w);
+        let sev_word = style.severity(self.severity, &self.severity.to_string());
+        let code_word = style.bold(&format!("[{}]", self.code));
+        let msg_word = style.bold(&self.message);
+        let arrow = style.gutter("-->");
+        let bar = style.gutter("|");
+        let line_num = style.gutter(&line_num_padded);
+        let carets = style.caret(self.severity, &carets_raw);
+
         format!(
-            "{sev} [{code}]: {msg}\n\
-             {blank} --> {location}\n\
-             {blank} |\n\
-             {line:>w$} | {line_text}\n\
-             {blank} | {pad}{carets}",
-            sev = self.severity,
-            code = self.code,
-            msg = self.message,
-            blank = blank_gutter,
-            location = location,
-            line = line, 
-            w = gutter_w,
-            line_text = line_text,
-            pad = pad,
-            carets = carets,
+            "{sev_word} {code_word}: {msg_word}\n\
+             {blank} {arrow} {location}\n\
+             {blank} {bar}\n\
+             {line_num} {bar} {line_text}\n\
+             {blank} {bar} {pad}{carets}",
+
+            blank = blank_gutter
         )
     }
 }
