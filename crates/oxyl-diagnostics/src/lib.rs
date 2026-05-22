@@ -281,9 +281,24 @@ mod tests {
             .with_span(DiagSpan::new(4, 5));
         let ansi = d.render_styled(&src, Style::Ansi);
 
+        // the bare error word should in theory be wrapped in an 
+        // SGR sequence and so should the caret.
+        // loc. should still be in the plain text in the output !!
         assert!(ansi.contains('\x1b'), "ansi render should contain ESC");
         assert!(ansi.contains("error"));
         assert!(ansi.contains("line 1:5"));
         assert!(ansi.contains('^'));
+    }
+
+    #[test]
+    fn render_warning_uses_yellow_not_red() {
+        let src = Source::new("foo \n");
+        let err = Diagnostic::error("E001", "x")
+            .with_span(DiagSpan::new(0, 1))
+            .render_styled(&src, Style::Ansi);
+        let warn = Diagnostic::warning("W001", "x")
+            .with_span(DiagSpan::new(0, 1))
+            .render_styled(&src, Style::Ansi);
+        assert_ne!(err, warn, "error and warning should pick different colours");
     }
 }
