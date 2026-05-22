@@ -2,7 +2,12 @@
 
 // ANSI styling for rendered diagnostics
 //
-// essentially just uses ansi and allat lol 
+// set style to plain to write nothing (zero ansi). set style to ansi 
+// to wrap bits of output in sgr escape seqs.
+//
+// colours follow rustc conventions - bold red for errors, yellow for 
+// warnings, cyan for notes and last but by no means least, bold blue for 
+// gutter elements ( --> | etc)
 
 use crate::Severity;
 
@@ -84,6 +89,6 @@ mod tests {
         let n = Style::Ansi.severity(Severity::Note, "x");
         assert_ne!(e, w);
         assert_ne!(w, n);
-        assert_ne!(e, n)
+        assert_ne!(e, n);
     }
 }

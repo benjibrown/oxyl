@@ -275,7 +275,7 @@ mod tests {
     }
 
     #[test]
-    fn render_ansi_paints_severity_carets() {
+    fn render_ansi_paints_severity_and_carets() {
         let src = Source::new("foo {bar\n");
         let d = Diagnostic::error("E020", "unclosed '{'")
             .with_span(DiagSpan::new(4, 5));
@@ -292,7 +292,7 @@ mod tests {
 
     #[test]
     fn render_warning_uses_yellow_not_red() {
-        let src = Source::new("foo \n");
+        let src = Source::new("foo\n");
         let err = Diagnostic::error("E001", "x")
             .with_span(DiagSpan::new(0, 1))
             .render_styled(&src, Style::Ansi);
