@@ -4,7 +4,8 @@
 /// repeated `line_col` lookups (one per diagnostic) aren't super slow
 /// I think O(log lines) - will fact check this later.
 /// An optional `name` (typically the file path) can be included 
-/// and rendered in diagnostics as `--> name:line:col`.
+/// and rendered in diagnostics as `--> name:line:col`
+
 pub struct Source<'a> {
     text: &'a str,
     name: Option<String>,
