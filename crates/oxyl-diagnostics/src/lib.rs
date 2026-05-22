@@ -264,4 +264,26 @@ mod tests {
         assert!(out.contains("line 1:5"));
         assert!(!out.contains("foo {bar:"), "name should not leak");
     }
+
+    #[test]
+    fn render_plain_has_no_escape_codes() {
+        let src = Source::new("foo {bar\n");
+        let d = Diagnostic::error("E020", "unclosed '{'")
+            .with_span(DiagSpan::new(4, 5));
+        let plain = d.render(&src);
+        assert!(!plain.contains('\x1b'), "plain render should not contain ESC: {plain:?}");
+    }
+
+    #[test]
+    fn render_ansi_paints_severity_carets() {
+        let src = Source::new("foo {bar\n");
+        let d = Diagnostic::error("E020", "unclosed '{'")
+            .with_span(DiagSpan::new(4, 5));
+        let ansi = d.render_styled(&src, Style::Ansi);
+
+        assert!(ansi.contains('\x1b'), "ansi render should contain ESC");
+        assert!(ansi.contains("error"));
+        assert!(ansi.contains("line 1:5"));
+        assert!(ansi.contains('^'));
+    }
 }
