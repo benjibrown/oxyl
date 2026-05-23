@@ -12,7 +12,10 @@ const EXIT_OK: i32 = 0;
 const EXIT_COMPILE: i32 = 1;
 const EXIT_USAGE: i32 = 2;
 
-/// users choice of when to use ANSI colour.
+/// users choice of when to use ANSI colour. `Auto` resolves to `Ansi` if 
+/// stderr is a terminal and the `NO_COLOR` env var is unset, otherwise to 
+/// `Plain`. Matches convention used by other stuff like rustc and 
+/// cargo etc.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ColorChoice {
     Auto,
@@ -43,7 +46,7 @@ fn main() {
                 println!("oxyl {}", env!("CARGO_PKG_VERSION"));
                 return;
             }
-
+            // support --color= and --color (without eqls)
             s if s.starts_with("--color=") => {
                 let value = &s["--color=".len()..];
                 color = match parse_color(value) {
@@ -160,6 +163,12 @@ fn parse_color(s: &str) -> Option<ColorChoice> {
     }
 }
 
+/// Decide the actual `Style` to use, given the user's preference.
+///
+/// `Auto` honours the no-color convention - the presence of a 
+/// non-empty NO_COLOR env var disables color regardless of TTY.
+/// Otherwise, only emit ANSI if stderr is a terminal - if piped into 
+/// less or tee there would be loads of annoying escape sequences smh.
 fn resolve_style(choice: ColorChoice) -> Style {
     match choice {
         ColorChoice::Always => Style::Ansi,
