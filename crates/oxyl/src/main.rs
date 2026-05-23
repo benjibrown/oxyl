@@ -52,6 +52,23 @@ fn main() {
                     }
                 };
             }
+            "--color" => {
+                i += 1;
+                let value = match args.get(i) {
+                    Some(v) => v.as_str(),
+                    None => {
+                        eprintln!("oxyl: --color needs a value (auto, always, never).");
+                        std::process::exit(EXIT_USAGE);
+                    }
+                };
+                color = match parse_color(value) {
+                    Some(c) => c,
+                    None => {
+                        eprintln!("oxyl: --color expects auto, always, or never (got '{value}').");
+                        std::process::exit(EXIT_USAGE);
+                    }
+                };
+            }
             other if other.starts_with('-') => {
                 eprintln!("oxyl: unknown flag '{other}'. Try --help.");
                 std::process::exit(EXIT_USAGE);
@@ -64,6 +81,7 @@ fn main() {
                 file = Some(other.to_owned());
             }
         }
+        i += 1;
     }
 
 
