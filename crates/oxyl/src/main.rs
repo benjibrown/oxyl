@@ -1,4 +1,6 @@
-use oxyl_diagnostics::{Diagnostic, Source};
+use std::io::IsTerminal;
+
+use oxyl_diagnostics::{Diagnostic, Source, Style};
 use oxyl_lexer::Lexer;
 use oxyl_parser::Parser;
 
@@ -84,6 +86,7 @@ fn main() {
         i += 1;
     }
 
+    let style = resolve_style(color);
 
     let path = match file {
         Some(p) => p,
@@ -111,7 +114,7 @@ fn main() {
 
     for e in &lex_result.errors {
         let d: Diagnostic = e.clone().into();
-        eprintln!("{}", d.render(&source));
+        eprintln!("{}", d.render_styled(&source, style));
         had_error = true;
     }
 
@@ -127,7 +130,7 @@ fn main() {
     let parse_result = Parser::new(lex_result.tokens).parse();
 
     for d in &parse_result.errors {
-        eprintln!("{}", d.render(&source));
+        eprintln!("{}", d.render_styled(&source, style));
         had_error = true;
     }
 
@@ -136,7 +139,7 @@ fn main() {
         for node in &parse_result.document.body {
             println!("  {node:?}");
         }
-        std::process::exit(if had_error { EXIT_COMPILE} else { EXIT_OK });
+        std::process::exit(if had_error { EXIT_COMPILE } else { EXIT_OK });
     }
     
     if had_error {
@@ -154,6 +157,24 @@ fn parse_color(s: &str) -> Option<ColorChoice> {
         "always" => Some(ColorChoice::Always),
         "never" => Some(ColorChoice::Never),
         _ => None,
+    }
+}
+
+fn resolve_style(choice: ColorChoice) -> Style {
+    match choice {
+        ColorChoice::Always => Style::Ansi,
+        ColorChoice::Never => Style::Plain,
+        ColorChoice::Auto => {
+            let no_color = std::env::var_os("NO_COLOR")
+                .map_or(false, |v| !v.is_empty());
+            if no_color {
+                Style::Plain
+            } else if std::io::stderr().is_terminal() {
+                Style::Ansi
+            } else {
+                Style::Plain
+            }
+        }
     }
 }
 
