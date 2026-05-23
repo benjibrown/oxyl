@@ -196,7 +196,16 @@ fn print_help() {
     println!("FLAGS:");
     println!("  --dump-tokens   Print every token with its byte span, then exit");
     println!("  --dump-ast      Print the parsed AST nodes, then exit");
+    println!("  --color <when>  auto (default), always, or never");
     println!("  --version, -V   Print the oxyl version and exit");
     println!("  --help, -h      Print this help message");
+    println!();
+    println!("EXIT CODES:");
+    println!("  0   success");
+    println!("  1   the file failed to lex/parse, or could not be read");
+    println!("  2   bad invocation (unknown flag, missing or extra arguments)");
+    println!();
+    println!("ENVIRONMENT:");
+    println!("  NO_COLOR    if set (and non-empty), disables ANSI colour even on a TTY");
 }
 
