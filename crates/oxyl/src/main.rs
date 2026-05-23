@@ -10,15 +10,26 @@ const EXIT_OK: i32 = 0;
 const EXIT_COMPILE: i32 = 1;
 const EXIT_USAGE: i32 = 2;
 
+/// users choice of when to use ANSI colour.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ColorChoice {
+    Auto,
+    Always,
+    Never,
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     // Parse flags and positional argument.
     let mut dump_tokens = false;
     let mut dump_ast = false;
+    let mut color = ColorChoice::Auto;
     let mut file: Option<String> = None;
 
-    for arg in args.iter().skip(1) {
+    let mut i = 1;
+    while i < args.len() {
+        let arg = &args[i];
         match arg.as_str() {
             "--dump-tokens" => dump_tokens = true, 
             "--dump-ast" => dump_ast = true,
@@ -29,6 +40,17 @@ fn main() {
             "--version" | "-V" => {
                 println!("oxyl {}", env!("CARGO_PKG_VERSION"));
                 return;
+            }
+
+            s if s.starts_with("--color=") => {
+                let value = &s["--color=".len()..];
+                color = match parse_color(value) {
+                    Some(c) => c,
+                    None => {
+                        eprintln!("oxyl: --color expects auto, always, or never (got '{value}').");
+                        std::process::exit(EXIT_USAGE);
+                    }
+                };
             }
             other if other.starts_with('-') => {
                 eprintln!("oxyl: unknown flag '{other}'. Try --help.");
@@ -106,6 +128,15 @@ fn main() {
     // Success: print a brief summary.
     let node_count = parse_result.document.body.len();
     println!("ok: parsed {node_count} top-level node(s) from {path}");
+}
+
+fn parse_color(s: &str) -> Option<ColorChoice> {
+    match s {
+        "auto" => Some(ColorChoice::Auto),
+        "always" => Some(ColorChoice::Always),
+        "never" => Some(ColorChoice::Never),
+        _ => None,
+    }
 }
 
 fn print_help() {
