@@ -38,9 +38,12 @@ oxyl <file.tex>
 oxyl <file.tex>                 parse the file and report any errors 
 oxyl --dump-tokens <file.tex>   print every lexer token with its byte span 
 oxyl --dump-ast <file.tex>      print the parsed AST nodes 
+oxyl --color <when> <file.tex>  auto (default), always, never
 oxyl --version                  print the oxyl version
 oxyl --help                     full flag list 
 ```
+
+Supress colour output/ANSI by setting `NO_COLOR` [in the environment](https://no-color.org/), or with `--color never`. Pass `--color=always` to force colour regardless of where stderr points (`auto` will only use colour if it is being output to a terminal).
 
 All exit codes follow the usual Unix convention: `0` on success, `1` if the file fails to lex or parse (or cannot be read), `2` if oxyl was invoked correctly (unknown flag, missing or extra arguments).
 
