@@ -328,4 +328,20 @@ mod tests {
             .render_styled(&src, Style::Ansi);
         assert_ne!(err, warn, "error and warning should pick different colours");
     }
+
+    #[test]
+    fn render_includes_notes_after_caret() {
+        let src = Source::new("foo {bar\n");
+        let d = Diagnostic::error("E020", "unclosed '{'")
+            .with_span(DiagSpan::new(4, 5))
+            .with_note("braces must be balanced")
+            .with_note("did you forget a '}'?");
+        let out = d.render(&src);
+        assert!(out.contains("= note: braces must be balanced"), "got: {out}");
+        assert!(out.contains("= note: did you forget a '}'"));
+        // notes always come after the caret line
+        let caret_idx = out.find('^').unwrap();
+        let note_idx = out.find("braces").unwrap();
+        assert!(note_idx > caret_idx, "notes must follow the caret");
+    }
 }
