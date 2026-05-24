@@ -69,7 +69,8 @@ pub struct Diagnostic {
     pub span: Option<DiagSpan>,
     /// A short extract of the source shown below the message, if provided.
     pub source_hint: Option<String>,
-
+    /// Free-form follow-up lines following common formatting / conventions 
+    /// cos why the hell not (`=note = ...`). Preserves order.
     pub notes: Vec<String>,
 }
 
@@ -105,7 +106,11 @@ impl Diagnostic {
         self.source_hint = Some(hint.into());
         self 
     }
-    
+   
+    /// Attach a follow-up note. Notes appear after the caret line 
+    /// when using styled render output - printed in the note colour 
+    /// for extra awesomeness. Multiple notes pushed will stack in the order 
+    /// they are inserted.
     pub fn with_note(mut self, msg: impl Into<String>) -> Self {
         self.notes.push(msg.into());
         self
@@ -163,7 +168,11 @@ impl Diagnostic {
              {blank} {bar} {pad}{carets}",
             blank = blank_gutter,
         );
-
+        
+        // rustc style because i like to follow conventions and i am not 
+        // re-inventing the wheel fr 
+        // the = should line up with the | above since it also sits in the 
+        // gutter - msg stays plain so it remains readable.
         for note in &self.notes {
             let eq = style.gutter("=");
             let note_word = style.severity(Severity::Note, "note:");
@@ -184,7 +193,7 @@ impl std::fmt::Display for Diagnostic {
             write!(f, "\n  | {hint}")?;
         }
         for note in &self.notes {
-            write!(f, "\n = note: {note}")?;
+            write!(f, "\n  = note: {note}")?;
         }
         Ok(())
     }
