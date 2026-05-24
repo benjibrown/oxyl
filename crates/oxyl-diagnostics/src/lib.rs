@@ -69,16 +69,19 @@ pub struct Diagnostic {
     pub span: Option<DiagSpan>,
     /// A short extract of the source shown below the message, if provided.
     pub source_hint: Option<String>,
+
+    pub notes: Vec<String>,
 }
 
 impl Diagnostic {
     pub fn error(code: &'static str, message: impl Into<String>) -> Self {
         Self { 
-            severity: Severity::Error, 
-            code, 
+            severity: Severity::Error,
+            code,
             message: message.into(),
             span: None,
             source_hint: None,
+            notes: Vec::new(),
         }
     }
 
@@ -89,6 +92,7 @@ impl Diagnostic {
             message: message.into(),
             span: None,
             source_hint: None,
+            notes: Vec::new(),
         }
     }
 
@@ -102,6 +106,10 @@ impl Diagnostic {
         self 
     }
     
+    pub fn with_note(mut self, msg: impl Into<String>) -> Self {
+        self.notes.push(msg.into());
+        self
+    }
 
     /// Render the diagnostic with a source listing and a caret under 
     /// the span that actually caused it. If the diagnostic has no span,
@@ -147,15 +155,22 @@ impl Diagnostic {
         let line_num = style.gutter(&line_num_padded);
         let carets = style.caret(self.severity, &carets_raw);
 
-        format!(
+        let mut out = format!(
             "{sev_word} {code_word}: {msg_word}\n\
              {blank} {arrow} {location}\n\
              {blank} {bar}\n\
              {line_num} {bar} {line_text}\n\
              {blank} {bar} {pad}{carets}",
+            blank = blank_gutter,
+        );
 
-            blank = blank_gutter
-        )
+        for note in &self.notes {
+            let eq = style.gutter("=");
+            let note_word = style.severity(Severity::Note, "note:");
+            out.push('\n');
+            out.push_str(&format!("{blank_gutter} {eq} {note_word} {note}"))
+        }
+        out
     }
 }
 
@@ -167,6 +182,9 @@ impl std::fmt::Display for Diagnostic {
         }
         if let Some(hint) = &self.source_hint {
             write!(f, "\n  | {hint}")?;
+        }
+        for note in &self.notes {
+            write!(f, "\n = note: {note}")?;
         }
         Ok(())
     }
