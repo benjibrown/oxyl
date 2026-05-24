@@ -165,15 +165,29 @@ fn parse_color(s: &str) -> Option<ColorChoice> {
 
 /// Decide the actual `Style` to use, given the user's preference.
 ///
-/// `Auto` honours the no-color convention - the presence of a 
-/// non-empty NO_COLOR env var disables color regardless of TTY.
-/// Otherwise, only emit ANSI if stderr is a terminal - if piped into 
-/// less or tee there would be loads of annoying escape sequences smh.
+/// In `Auto`, two different conventions are usedL
+/// 
+/// - `CLICOLOR_FORCE` set to a non-empty value forces colour even 
+/// when stderr is a pipe. 
+/// - `NO_COLOR` - any non-empty value disables colour, regardless 
+/// of TTY and allat.
+///
+/// When neither variable applies, only emit ANSI if stderr is a terminal 
+/// since piping into something like tee or less would otherwise produce
+/// a whole load of rubbish (ansi escape sequences)
+///
+/// `Always`/`Never` will skip the env-var checks so if an explicit flag
+/// is give, that takes priority. :)
 fn resolve_style(choice: ColorChoice) -> Style {
     match choice {
         ColorChoice::Always => Style::Ansi,
         ColorChoice::Never => Style::Plain,
         ColorChoice::Auto => {
+            let force = std::env::var_os("CLICOLOR_FORCE")
+                .map_or(false, |v| !v.is_empty());
+            if force {
+                return Style::Ansi;
+            }
             let no_color = std::env::var_os("NO_COLOR")
                 .map_or(false, |v| !v.is_empty());
             if no_color {
