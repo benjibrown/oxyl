@@ -46,7 +46,7 @@ oxyl --help                     full flag list
 
 Supress colour output/ANSI by setting `NO_COLOR` [in the environment](https://no-color.org/), or with `--color never`. Pass `--color=always` to force colour regardless of where stderr points (`auto` will only use colour if it is being output to a terminal).
 
-To force colour through a pipe: pass `--color=always` on the command line, or set `CLI_COLOR_FORCE=1` in the environment (the [bixense.com/clicolors](https://bixense.com/clicolors) convention).  
+To force colour through a pipe: pass `--color=always` on the command line, or set `CLICOLOR_FORCE=1` in the environment (the [bixense.com/clicolors](https://bixense.com/clicolors) convention).  
 
 All exit codes follow the usual Unix convention: `0` on success, `1` if the file fails to lex or parse (or cannot be read), `2` if oxyl was invoked correctly (unknown flag, missing or extra arguments).
 
