@@ -307,10 +307,11 @@ impl Parser {
             if close_name.as_deref() != Some(env_name.as_str()) {
                 self.errors.push(
                     Diagnostic::error("E042", format!(
-                            "'\\end{{{}}}' does not match '\\begin{{{}}}'",
-                            close_name.as_deref().unwrap_or(""), env_name,
+                        "'\\end{{{}}}' does not match '\\begin{{{}}}'",
+                        close_name.as_deref().unwrap_or(""), env_name,
                     ))
-                    .with_span(diag_span(end_tok.span)),
+                    .with_span(diag_span(end_tok.span))
+                    .with_note(format!("the matching '\\begin' opened the '{env_name}' environment")),
                 );
             }
 
