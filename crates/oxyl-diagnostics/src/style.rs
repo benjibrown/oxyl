@@ -1,5 +1,3 @@
-// TODO - WIRE UP ANSI Into MAIN CLI PROPERLY
-
 // ANSI styling for rendered diagnostics
 //
 // set style to plain to write nothing (zero ansi). set style to ansi 

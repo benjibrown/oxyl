@@ -344,4 +344,28 @@ mod tests {
         let note_idx = out.find("braces").unwrap();
         assert!(note_idx > caret_idx, "notes must follow the caret");
     }
+
+    #[test]
+    fn ansi_render_paints_note_word() {
+        let src = Source::new("x\n");
+        let d = Diagnostic::error("E001", "boom")
+            .with_span(DiagSpan::new(0, 1))
+            .with_note("a follow-up");
+        let ansi = d.render_styled(&src, Style::Ansi);
+        let plain = d.render_styled(&src, Style::Plain);
+        assert!(ansi.contains("a follow-up"));
+        assert!(plain.contains("a follow-up"));
+        // the worde "note" should be wrapped in sgr if ansi on
+        // but not at all in plain mode
+        assert!(ansi.contains("\x1b[1;36mnote:\x1b[0m"));
+        assert!(!plain.contains('\x1b'));
+    }
+
+    #[test]
+    fn display_renders_notes_when_no_source_available() {
+        // the display path is the fallback for callers w/out a source
+        // so notes should still render anyway
+        let d = Diagnostic::error("E001", "x").with_note("hello");
+        assert!(d.to_string().contains("= note: hello"));
+    }
 }
