@@ -74,6 +74,9 @@ fn main() {
                     }
                 };
             }
+            // convenience alias for --color=never like most 
+            // modern cli tools have - cos we like to optimise frfr
+            "--no-color" => color = ColorChoice::Never,
             other if other.starts_with('-') => {
                 eprintln!("oxyl: unknown flag '{other}'. Try --help.");
                 std::process::exit(EXIT_USAGE);
@@ -111,7 +114,7 @@ fn main() {
     // and so renderings include the filename to get --> file:line:col
     let source = Source::with_name(&src, &path);
 
-    // --- Lex. --- 
+    // lexer !
     let lex_result = Lexer::new(&src).tokenise();
     let mut had_error = false;
 
@@ -129,7 +132,7 @@ fn main() {
         std::process::exit(if had_error { EXIT_COMPILE } else { EXIT_OK });
     }
 
-    // Parse.
+    // parse stuff
     let parse_result = Parser::new(lex_result.tokens).parse();
 
     for d in &parse_result.errors {
@@ -211,6 +214,7 @@ fn print_help() {
     println!("  --dump-tokens   Print every token with its byte span, then exit");
     println!("  --dump-ast      Print the parsed AST nodes, then exit");
     println!("  --color <when>  auto (default), always, or never");
+    println!("  --no-color      Alias for --color=never");
     println!("  --version, -V   Print the oxyl version and exit");
     println!("  --help, -h      Print this help message");
     println!();
@@ -220,6 +224,10 @@ fn print_help() {
     println!("  2   bad invocation (unknown flag, missing or extra arguments)");
     println!();
     println!("ENVIRONMENT:");
-    println!("  NO_COLOR    if set (and non-empty), disables ANSI colour even on a TTY");
+    println!("  NO_COLOR            if set (and non-empty), disables ANSI colour");
+    println!("                      even on a TTY (https://no-color.org)");
+    println!("  CLICOLOR_FORCE      if set (non-empty), forces ANSI colour");
+    println!("                      even when stderr is piped or redirected");
+    println!("                      (https://bixense.com/clicolors)");
 }
 
