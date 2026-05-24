@@ -211,12 +211,12 @@ fn print_help() {
     println!("  oxyl [FLAGS] <file.tex>");
     println!();
     println!("FLAGS:");
-    println!("  --dump-tokens   Print every token with its byte span, then exit");
-    println!("  --dump-ast      Print the parsed AST nodes, then exit");
-    println!("  --color <when>  auto (default), always, or never");
-    println!("  --no-color      Alias for --color=never");
-    println!("  --version, -V   Print the oxyl version and exit");
-    println!("  --help, -h      Print this help message");
+    println!("  --dump-tokens       Print every token with its byte span, then exit");
+    println!("  --dump-ast          Print the parsed AST nodes, then exit");
+    println!("  --color <when>      auto (default), always, or never");
+    println!("  --no-color          Alias for --color=never");
+    println!("  --version, -V       Print the oxyl version and exit");
+    println!("  --help, -h          Print this help message");
     println!();
     println!("EXIT CODES:");
     println!("  0   success");
