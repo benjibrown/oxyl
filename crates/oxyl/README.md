@@ -6,7 +6,7 @@
 </div>
 
 
-**Status:** very early stage - workspace skeleton only, nothing to compile documents yet or produce an AST etc. Run with `--dump-tokens` or `--dump-ast` to see what oxyl is making of your file.
+**Status:** very early stage - the lexer and a partial parser exit, but oxyl doesn't produce output yet. Run with `--dump-tokens` or `--dump-ast` to see what oxyl is making of your file.
 
 ## What is this?
 
@@ -39,11 +39,14 @@ oxyl <file.tex>                 parse the file and report any errors
 oxyl --dump-tokens <file.tex>   print every lexer token with its byte span 
 oxyl --dump-ast <file.tex>      print the parsed AST nodes 
 oxyl --color <when> <file.tex>  auto (default), always, never
+oxyl --no-color <file.tex>      alias for --color=nevr
 oxyl --version                  print the oxyl version
 oxyl --help                     full flag list 
 ```
 
 Supress colour output/ANSI by setting `NO_COLOR` [in the environment](https://no-color.org/), or with `--color never`. Pass `--color=always` to force colour regardless of where stderr points (`auto` will only use colour if it is being output to a terminal).
+
+To force colour through a pipe: pass `--color=always` on the command line, or set `CLI_COLOR_FORCE=1` in the environment (the [bixense.com/clicolors](https://bixense.com/clicolors) convention).  
 
 All exit codes follow the usual Unix convention: `0` on success, `1` if the file fails to lex or parse (or cannot be read), `2` if oxyl was invoked correctly (unknown flag, missing or extra arguments).
 
