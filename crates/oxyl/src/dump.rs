@@ -1,6 +1,19 @@
 // colourisation for dump tokens output 
 //
+// the diagnostic renderer in the diagnostics crate manages all of 
+// its own color. token dump output is a whole diff beast lol, no severity
+// or anything, just tokenkind and span.
+// own palette - seperate to the rest of the program and still follows
+// plain or ansi like diagnostics does 
 //
+// control seqs (cmds) are magenta 
+// group markers {} are yellow 
+// $ is cyan 
+// &, #, ^, _, ~ are green 
+// spaces or pars are dim (like a grey basically)
+// characters are plain / default
+// byte spans are dim 
+// header line is bold
 
 use oxyl_diagnostics::Style;
 use oxyl_lexer::{Token, TokenKind};
@@ -28,12 +41,12 @@ fn kind_code(kind: &TokenKind) -> Option<&'static str> {
         TokenKind::ControlSeq(_) => Some(MAGENTA),
         TokenKind::BeginGroup
         | TokenKind::EndGroup => Some(YELLOW),
-        TokenKind::Mathshift => Some(CYAN),
+        TokenKind::MathShift => Some(CYAN),
         TokenKind::AlignTab
         | TokenKind::Parameter 
         | TokenKind::Superscript
         | TokenKind::Subscript
-        | TokenKind::Tilde =>Some(BLUE),
+        | TokenKind::Tilde => Some(BLUE),
         TokenKind::Comment(_) => Some(GREEN),
         TokenKind::Space
         | TokenKind::ParagraphBreak => Some(DIM),
@@ -41,17 +54,24 @@ fn kind_code(kind: &TokenKind) -> Option<&'static str> {
     }
 }
 
+/// Print the token dump for `--dump-tokens`. Honours `style`: when
+/// `Plain`, output contains zero ansi - for scenarios where
+/// output is being piped etc.
 pub fn dump_tokens(tokens: &[Token], style: Style) {
     let header = format!("=== tokens ({}) ===", tokens.len());
     println!("{}", paint(style, BOLD, &header));
 
     for tok in tokens {
-        let span = format!("{:>4}..{:<4}", tok.span.start, tok.span.end);
+        // spans aren't really necessary unless ur looking
+        // for a specific span range so dim all 
+        // of those. >=6 digit offset - so wide files are 
+        // nice and readable!
+        let span = format!("{:>6}..{:<6}", tok.span.start, tok.span.end);
         let span = paint(style, DIM, &span);
 
         let kind_text = tok.kind.to_string();
         let kind = match kind_code(&tok.kind) {
-            Some(code) => paint(style, code &kind_text),
+            Some(code) => paint(style, code, &kind_text),
             None => kind_text,
         };
 
