@@ -4,6 +4,8 @@ use oxyl_diagnostics::{Diagnostic, Source, Style};
 use oxyl_lexer::Lexer;
 use oxyl_parser::Parser;
 
+mod dump;
+
 // unix convetion (sysexists.h) - 0 for success, 1 for the operation 
 // itself failing, 2 for the user invoking anything incorrectly. 
 // Split out so shell scripts can tell if you had a syntax err in ur file 
@@ -92,7 +94,12 @@ fn main() {
         i += 1;
     }
 
-    let style = resolve_style(color);
+    // two streams so two diff tty checks. diagnostics write to stderr, dump
+    // output writes to stdout - so check both individually to ensure
+    // all cases are actually covered so stderr can have no color whilst
+    // stdout does have color
+    let err_style = resolve_style(color, std::io::stderr().is_terminal());
+    let out_style = resolve_style(color, std::io::stdout().is_terminal());
 
     let path = match file {
         Some(p) => p,
@@ -120,15 +127,12 @@ fn main() {
 
     for e in &lex_result.errors {
         let d: Diagnostic = e.clone().into();
-        eprintln!("{}", d.render_styled(&source, style));
+        eprintln!("{}", d.render_styled(&source, err_style));
         had_error = true;
     }
 
     if dump_tokens {
-        println!("=== tokens ({}) ===", lex_result.tokens.len());
-        for tok in &lex_result.tokens {
-            println!("  {:>6}..{:<6}  {}", tok.span.start, tok.span.end, tok.kind);
-        }
+        dump::dump_tokens(&lex_result.tokens, out_style);
         std::process::exit(if had_error { EXIT_COMPILE } else { EXIT_OK });
     }
 
@@ -136,7 +140,7 @@ fn main() {
     let parse_result = Parser::new(lex_result.tokens).parse();
 
     for d in &parse_result.errors {
-        eprintln!("{}", d.render_styled(&source, style));
+        eprintln!("{}", d.render_styled(&source, err_style));
         had_error = true;
     }
 
@@ -181,7 +185,7 @@ fn parse_color(s: &str) -> Option<ColorChoice> {
 ///
 /// `Always`/`Never` will skip the env-var checks so if an explicit flag
 /// is give, that takes priority. :)
-fn resolve_style(choice: ColorChoice) -> Style {
+fn resolve_style(choice: ColorChoice, is_tty: bool) -> Style {
     match choice {
         ColorChoice::Always => Style::Ansi,
         ColorChoice::Never => Style::Plain,
@@ -195,7 +199,7 @@ fn resolve_style(choice: ColorChoice) -> Style {
                 .map_or(false, |v| !v.is_empty());
             if no_color {
                 Style::Plain
-            } else if std::io::stderr().is_terminal() {
+            } else if is_tty {
                 Style::Ansi
             } else {
                 Style::Plain
