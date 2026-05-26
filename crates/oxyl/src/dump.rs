@@ -270,4 +270,6 @@ mod tests {
         dump_tokens(&toks, Style::Plain);
         dump_tokens(&toks, Style::Ansi);
     }
+
+    // TODO - tests for ast color
 }
