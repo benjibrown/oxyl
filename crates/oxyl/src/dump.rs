@@ -139,7 +139,25 @@ fn print_node(node: &Node, depth: usize, style: Style) {
             let body = paint(style, GREEN, &format!("{body:?}"));
             println!("{indent}{variant} {body} {span}");
         }
-        _ => todo!()
+        Node::AlignTab(_) => {
+            let variant = paint(style, CYAN, "AlignTab");
+            println!("{indent}{variant} {span}");
+        }
+        Node::Tilde(_) => {
+            let variant = paint(style, CYAN, "Tilde");
+            println!("{indent}{variant} {span}");
+        }
+        Node::Environment { name, args, body, .. } => {
+            let variant = paint(style, CYAN, "Environment");
+            let name = paint(style, GREEN, &format!("{name:?}"));
+            println!("{indent}{variant} {name} {span}");
+            for arg in args {
+                print_arg(arg, depth + 1, style);
+            }
+            for child in body {
+                print_node(child, depth + 1, style);
+            }
+        }
     }
 }
 
