@@ -152,6 +152,9 @@ mod tests {
 
     #[test]
     fn dump_tokens_handles_mixed_input() {
+        // a mix of kinds shouldnt cause panic and 
+        // should write something to stdout.
+        // super peak test
         let toks = vec![
             tok(TokenKind::ControlSeq("foo".into())),
             tok(TokenKind::BeginGroup),
