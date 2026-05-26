@@ -85,6 +85,10 @@ mod tests {
     use super::*;
     use oxyl_lexer::Span;
 
+    fn tok(kind: TokenKind) -> Token {
+        Token::new(kind, Span::new(0, 1))
+    }
+
     #[test]
     fn plain_passes_through_kind_text() {
         assert_eq!(paint(Style::Plain, MAGENTA, "\\foo"), "\\foo");
@@ -138,5 +142,24 @@ mod tests {
         assert_eq!(blue, kind_code(&TokenKind::Superscript));
         assert_eq!(blue, kind_code(&TokenKind::Subscript));
         assert_eq!(blue, kind_code(&TokenKind::Tilde));
+    }
+
+    #[test]
+    fn dump_tokens_doesnt_panic_on_empty() {
+        dump_tokens(&[], Style::Plain);
+        dump_tokens(&[], Style::Ansi);
+    }
+
+    #[test]
+    fn dump_tokens_handles_mixed_input() {
+        let toks = vec![
+            tok(TokenKind::ControlSeq("foo".into())),
+            tok(TokenKind::BeginGroup),
+            tok(TokenKind::Char('a')),
+            tok(TokenKind::EndGroup),
+            tok(TokenKind::Comment(" hi".into())),
+        ];
+        dump_tokens(&toks, Style::Plain);
+        dump_tokens(&toks, Style::Ansi);
     }
 }
