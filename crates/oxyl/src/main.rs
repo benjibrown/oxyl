@@ -145,10 +145,7 @@ fn main() {
     }
 
     if dump_ast {
-        println!("=== AST ({} top-level node(s)) ===", parse_result.document.body.len());
-        for node in &parse_result.document.body {
-            println!("  {node:?}");
-        }
+        dump::dump_ast(&parse_result.document.body, out_style);
         std::process::exit(if had_error { EXIT_COMPILE } else { EXIT_OK });
     }
     

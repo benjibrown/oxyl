@@ -87,7 +87,7 @@ pub fn dump_ast(nodes: &[Node], style: Style) {
     let header = format!("=== AST ({} top-level node(s)) ===", nodes.len());
     println!("{}", paint(style, BOLD, &header));
     for node in nodes {
-        print_node(node, 1, style)
+        print_node(node, 1, style);
     }
 }
 
@@ -100,8 +100,34 @@ fn print_node(node: &Node, depth: usize, style: Style) {
             let variant = paint(style, CYAN, "Text");
             let text = paint(style, GREEN, &format!("{text:?}"));
             println!("{indent}{variant} {text} {span}");
+        }
+        Node::ParagraphBreak(_) => {
+            let variant = paint(style, CYAN, "ParagraphBreak");
+            println!("{indent}{variant} {span}");
+        }
+        Node::Command{ name, args, .. } => {
+            let variant = paint(style, CYAN, "Command");
+            let name = paint(style, GREEN, &format!("\"\\{name}\""));
+            println!("{indent}{variant} {name} {span}");
+            for arg in args{
+                print_arg(arg, depth + 1, style);
+            }
         },
         _ => todo!()
+    }
+}
+
+fn print_arg(arg: &Arg, depth: usize, style: Style) {
+    let indent = "  ".repeat(depth);
+    match arg {
+        Arg::Mandatory(children) => {
+            let label = paint(style, MAGENTA, "Mandatory");
+            println!("{indent}{label}");
+            for child in children {
+                print_node(child, depth + 1, style);
+            }
+        },
+    _ => todo!()
     }
 }
 
