@@ -112,7 +112,28 @@ fn print_node(node: &Node, depth: usize, style: Style) {
             for arg in args{
                 print_arg(arg, depth + 1, style);
             }
-        },
+        }
+        Node::Group(children, _) => {
+            let variant = paint(style, CYAN, "Group");
+            println!("{indent}{variant} {span}");
+            for child in children {
+                print_node(child, depth + 1, style);
+            }
+        }
+        Node::Math(children, _) => {
+            let variant = paint(style, CYAN, "Math");
+            println!("{indent}{variant} {span}");
+            for child in children {
+                print_node(child, depth + 1, style);
+            }
+        }
+        Node::DisplayMath(children, _) => {
+            let variant = paint(style, CYAN, "DisplayMath");
+            println!("{indent}{variant} {span}");
+            for child in children {
+                print_node(child, depth + 1, style);
+            }
+        }
         _ => todo!()
     }
 }
