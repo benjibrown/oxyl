@@ -9,7 +9,8 @@
 // control seqs (cmds) are magenta 
 // group markers {} are yellow 
 // $ is cyan 
-// &, #, ^, _, ~ are green 
+// &, #, ^, _, ~ are blue 
+// % comments are green
 // spaces or pars are dim (like a grey basically)
 // characters are plain / default
 // byte spans are dim 
@@ -78,3 +79,6 @@ pub fn dump_tokens(tokens: &[Token], style: Style) {
         println!("  {span}  {kind}");
     }
 }
+
+
+
