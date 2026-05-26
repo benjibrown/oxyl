@@ -123,4 +123,20 @@ mod tests {
         // char has no colour code so check is none
         assert!(kind_code(&TokenKind::Char('a')).is_none());
     }
+
+    #[test]
+    fn group_kinds_share_colour() {
+        // matching pairs should look the same
+        assert_eq!(kind_code(&TokenKind::BeginGroup), kind_code(&TokenKind::EndGroup));
+    }
+
+    #[test]
+    fn structural_kinds_share_colour() {
+        let blue = kind_code(&TokenKind::AlignTab);
+
+        assert_eq!(blue, kind_code(&TokenKind::Parameter));
+        assert_eq!(blue, kind_code(&TokenKind::Superscript));
+        assert_eq!(blue, kind_code(&TokenKind::Subscript));
+        assert_eq!(blue, kind_code(&TokenKind::Tilde));
+    }
 }
