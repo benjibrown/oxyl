@@ -103,5 +103,24 @@ mod tests {
         // char has no colour so kind_code returns None for it
         // other than that though, all other token kinds 
         // have colour codes assigned to them !
+        assert!(kind_code(&TokenKind::ControlSeq("x".into())).is_some());
+
+        assert!(kind_code(&TokenKind::BeginGroup).is_some());
+        assert!(kind_code(&TokenKind::EndGroup).is_some());
+
+        assert!(kind_code(&TokenKind::MathShift).is_some());
+        
+        assert!(kind_code(&TokenKind::AlignTab).is_some());
+        assert!(kind_code(&TokenKind::Parameter).is_some());
+        assert!(kind_code(&TokenKind::Superscript).is_some());
+        assert!(kind_code(&TokenKind::Subscript).is_some());
+        assert!(kind_code(&TokenKind::Tilde).is_some());
+
+        assert!(kind_code(&TokenKind::Comment("x".into())).is_some());
+        
+        assert!(kind_code(&TokenKind::Space).is_some());
+        assert!(kind_code(&TokenKind::ParagraphBreak).is_some());
+        // char has no colour code so check is none
+        assert!(kind_code(&TokenKind::Char('a')).is_none());
     }
 }
