@@ -18,6 +18,7 @@
 
 use oxyl_diagnostics::Style;
 use oxyl_lexer::{Token, TokenKind};
+use oxyl_parser::{Arg, Node};
 
 const RESET: &str = "\x1b[0m";
 const BOLD: &str = "\x1b[1m";
@@ -78,6 +79,34 @@ pub fn dump_tokens(tokens: &[Token], style: Style) {
 
         println!("  {span}  {kind}");
     }
+}
+
+// ast dump stuff 
+
+pub fn dump_ast(nodes: &[Node], style: Style) {
+    let header = format!("=== AST ({} top-level node(s)) ===", nodes.len());
+    println!("{}", paint(style, BOLD, &header));
+    for node in nodes {
+        print_node(node, 1, style)
+    }
+}
+
+fn print_node(node: &Node, depth: usize, style: Style) {
+    let indent = "  ".repeat(depth);
+    let span = paint(style, DIM, &format_span(node.span()));
+
+    match node {
+        Node::Text(text, _) => {
+            let variant = paint(style, CYAN, "Text");
+            let text = paint(style, GREEN, &format!("{text:?}"));
+            println!("{indent}{variant} {text} {span}");
+        },
+        _ => todo!()
+    }
+}
+
+fn format_span(span: oxyl_lexer::Span) -> String {
+    format!("@ {}..{}", span.start, span.end)
 }
 
 #[cfg(test)]
