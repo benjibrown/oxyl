@@ -134,6 +134,11 @@ fn print_node(node: &Node, depth: usize, style: Style) {
                 print_node(child, depth + 1, style);
             }
         }
+        Node::Comment(body, _) => {
+            let variant = paint(style, CYAN, "Comment");
+            let body = paint(style, GREEN, &format!("{body:?}"));
+            println!("{indent}{variant} {body} {span}");
+        }
         _ => todo!()
     }
 }
