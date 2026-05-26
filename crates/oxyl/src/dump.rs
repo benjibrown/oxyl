@@ -80,5 +80,28 @@ pub fn dump_tokens(tokens: &[Token], style: Style) {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oxyl_lexer::Span;
 
+    #[test]
+    fn plain_passes_through_kind_text() {
+        assert_eq!(paint(Style::Plain, MAGENTA, "\\foo"), "\\foo");
+    }
 
+    #[test]
+    fn ansi_wraps_in_escape_codes() {
+        let out = paint(Style::Ansi, MAGENTA, "\\foo");
+        assert!(out.starts_with("\x1b["));
+        assert!(out.ends_with(RESET));
+        assert!(out.contains("\\foo"));
+    }
+
+    #[test]
+    fn every_kind_has_colour() {
+        // char has no colour so kind_code returns None for it
+        // other than that though, all other token kinds 
+        // have colour codes assigned to them !
+    }
+}
