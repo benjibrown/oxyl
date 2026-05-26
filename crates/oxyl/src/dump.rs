@@ -126,8 +126,14 @@ fn print_arg(arg: &Arg, depth: usize, style: Style) {
             for child in children {
                 print_node(child, depth + 1, style);
             }
-        },
-    _ => todo!()
+        }
+        Arg::Optional(children) => {
+            let label = paint(style, MAGENTA, "Optional");
+            println!("{indent}{label}");
+            for child in children {
+                print_node(child, depth + 1, style);
+            }
+        }
     }
 }
 
