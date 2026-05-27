@@ -276,9 +276,35 @@ mod tests {
 
     use oxyl_parser::{Arg, Node};
 
+    fn s() -> oxyl_lexer::Span { oxyl_lexer::Span::new(0, 0) }
+
     #[test]
     fn dump_ast_doesnt_panic_empty() {
         dump_ast(&[], Style::Plain);
         dump_ast(&[], Style::Ansi);
+    }
+
+    #[test]
+    fn ast_handles_nested_tree() {
+        let nodes = vec![
+            Node::Command {
+                name: "section".to_string(),
+                args: vec![Arg::Mandatory(vec![Node::Text("Intro".to_string(), s())])],
+                span: s(),
+            },
+            Node::ParagraphBreak(s()),
+            Node::Environment {
+                name: "tabular".to_string(),
+                args: vec![Arg::Mandatory(vec![Node::Text("cc".to_string(), s())])],
+                body: vec![
+                    Node::Text("a".to_string(), s()),
+                    Node::AlignTab(s()),
+                    Node::Text("b".to_string(), s()),
+                ],
+                span: s(),
+            },
+        ];
+        dump_ast(&nodes, Style::Plain);
+        dump_ast(&nodes, Style::Ansi);
     }
 }
