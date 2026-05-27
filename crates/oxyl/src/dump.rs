@@ -15,6 +15,15 @@
 // characters are plain / default
 // byte spans are dim 
 // header line is bold
+//
+//
+// AST palette is pretty similar tbh
+//
+// variant names - cyan 
+// arg discrims - magenta 
+// strings (embedded) - green 
+// byte spans - dim / grey 
+// header - bold
 
 use oxyl_diagnostics::Style;
 use oxyl_lexer::{Token, TokenKind};
@@ -82,7 +91,10 @@ pub fn dump_tokens(tokens: &[Token], style: Style) {
 }
 
 // ast dump stuff 
-
+//
+// prints the ast dump for the dump ast flag
+// each node renders on its own line 
+// container nodes recurse too which is so awesome
 pub fn dump_ast(nodes: &[Node], style: Style) {
     let header = format!("=== AST ({} top-level node(s)) ===", nodes.len());
     println!("{}", paint(style, BOLD, &header));
@@ -286,6 +298,9 @@ mod tests {
 
     #[test]
     fn ast_handles_nested_tree() {
+        // a command with a mandatory arg 
+        // that itself contains a text node. dumper should
+        // go thu recursively, not stop at the first depth
         let nodes = vec![
             Node::Command {
                 name: "section".to_string(),
