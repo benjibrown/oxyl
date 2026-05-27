@@ -307,4 +307,24 @@ mod tests {
         dump_ast(&nodes, Style::Plain);
         dump_ast(&nodes, Style::Ansi);
     }
+
+    #[test]
+    fn dump_ast_every_node() {
+        // construct each variant atleast once - if a new var is added
+        // and not here, print_node will fail to compile 
+        // so will have to update this lol
+        let nodes = vec![
+            Node::Text("t".into(), s()),
+            Node::ParagraphBreak(s()),
+            Node::Command{ name: "x".into(), args: vec![], span: s() },
+            Node::Group(vec![], s()),
+            Node::Math(vec![], s()),
+            Node::DisplayMath(vec![], s()),
+            Node::Comment("c".into(), s()),
+            Node::AlignTab(s()),
+            Node::Tilde(s()),
+            Node::Environment{ name: "e".into(), args: vec![], body: vec![], span: s() },
+        ];
+        dump_ast(&nodes, Style::Plain);
+    }
 }
