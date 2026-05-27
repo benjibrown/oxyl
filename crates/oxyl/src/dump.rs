@@ -271,5 +271,14 @@ mod tests {
         dump_tokens(&toks, Style::Ansi);
     }
 
-    // TODO - tests for ast color
+
+    // ast dump tests
+
+    use oxyl_parser::{Arg, Node};
+
+    #[test]
+    fn dump_ast_doesnt_panic_empty() {
+        dump_ast(&[], Style::Plain);
+        dump_ast(&[], Style::Ansi);
+    }
 }
