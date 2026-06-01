@@ -13,11 +13,21 @@ const MAGENTA: &str = "\x1b[1;35m";
 const CYAN: &str = "\x1b[36m";
 const CYAN_B: &str = "\x1b[1;36m";
 
+// description column at byte 20 of each line - 2 char indent and 
+// and 18 char name col. shared by flags and environment blocks
+// so they all line up visually and allat :)
+const NAME_COL: usize = 18;
+
 fn paint(style: Style, code: &str, s: &str) -> String {
     match style {
         Style::Plain => s.to_owned(),
         Style::Ansi => format!("{code}{s}{RESET}"),
     }
+}
+
+fn pad_painted(style: Style, code: &str, text: &str, width: usize) -> String {
+    let pad = " ".repeat(width.saturating_sub(text.chars().count()));
+    format!("{}{pad}", paint(style, code, text))
 }
 
 pub fn print_help(style: Style) {
