@@ -68,5 +68,30 @@ pub fn print_help(style: Style) {
         let pad = " ".repeat(NAME_COL.saturating_sub(14));
         let dflt = paint(style, DIM, "(default)");
         println!("  {flag} {arg}{pad}auto {dflt}, always, or never");
+    } 
+    // --version and --help both have aliases (-h and -V)
+    // so emit comma and short flag to make sure 
+    // they all get that precious color fr
+    {
+        let long = paint(style, MAGENTA, "--version");
+        let short = paint(style, MAGENTA, "-V");
+        let combined = format!("{long}, {short}");
+        // visible width is 13
+        let pad = " ".repeat(NAME_COL.saturating_sub(13));
+        println!("  {combined}{pad}Print the {oxyl} version and exit");
     }
+    {
+        let long = paint(style, MAGENTA, "--help");
+        let short = paint(style, MAGENTA, "-h");
+        let combined = format!("{long}, {short}");
+        // visible width is 13
+        let pad = " ".repeat(NAME_COL.saturating_sub(10));
+        println!("  {combined}{pad}Print this help message");
+    }
+    println!();
+
+    println!("{}", paint(style, YELLOW, "EXIT CODES:"));
+    println!("  {}  success", paint(style, BOLD, "0"));
+    println!("  {}  the file failed to lex/parse, or could not be read", paint(style, BOLD, "1"));
+    println!("  {}  bad invocation (unknown flag, missing or extra arguments)", paint(style, BOLD, "2"));
 }
