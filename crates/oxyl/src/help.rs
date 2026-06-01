@@ -68,7 +68,10 @@ pub fn print_help(style: Style) {
         let pad = " ".repeat(NAME_COL.saturating_sub(14));
         let dflt = paint(style, DIM, "(default)");
         println!("  {flag} {arg}{pad}auto {dflt}, always, or never");
-    } 
+    }
+    println!("  {}Alias for {}",
+        pad_painted(style, MAGENTA, "--no-color", NAME_COL),
+        paint(style, MAGENTA, "--color=never"));
     // --version and --help both have aliases (-h and -V)
     // so emit comma and short flag to make sure 
     // they all get that precious color fr
@@ -84,7 +87,6 @@ pub fn print_help(style: Style) {
         let long = paint(style, MAGENTA, "--help");
         let short = paint(style, MAGENTA, "-h");
         let combined = format!("{long}, {short}");
-        // visible width is 13
         let pad = " ".repeat(NAME_COL.saturating_sub(10));
         println!("  {combined}{pad}Print this help message");
     }
@@ -94,4 +96,20 @@ pub fn print_help(style: Style) {
     println!("  {}  success", paint(style, BOLD, "0"));
     println!("  {}  the file failed to lex/parse, or could not be read", paint(style, BOLD, "1"));
     println!("  {}  bad invocation (unknown flag, missing or extra arguments)", paint(style, BOLD, "2"));
+    println!();
+
+    println!("{}", paint(style, YELLOW, "ENVIRONMENT:"));
+    // continuation lines use same 18 col blank pad 
+    // as the env var names so descriptions and their continuations
+    // all line up properly.
+    let cont = " ".repeat(NAME_COL);
+    println!("  {}if set (non-empty), disables ANSI colour",
+        pad_painted(style, CYAN_B, "NO_COLOR", NAME_COL));
+    println!("  {cont}even on a TTY ({})",
+        paint(style, DIM, "https://no-color.org"));
+    println!("  {}if set (non-empty), forces ANSI colour",
+        pad_painted(style, CYAN_B, "CLICOLOR_FORCE", NAME_COL));
+    println!("  {cont}even when stderr is piped or redirected");
+    println!("  {cont}({})",
+        paint(style, DIM, "https://bixense.com/clicolors"));
 }
