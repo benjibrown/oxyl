@@ -113,3 +113,5 @@ pub fn print_help(style: Style) {
     println!("  {cont}({})",
         paint(style, DIM, "https://bixense.com/clicolors"));
 }
+
+// TODO - test!!!!
