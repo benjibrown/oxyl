@@ -51,4 +51,22 @@ pub fn print_help(style: Style) {
     println!();
 
     println!("{}", paint(style, YELLOW, "FLAGS:"));
+
+    // single token flag - go thru the pad paint so 
+    // theyre all nice and aligned
+    println!("  {}Print every token with its byte span, then exit",
+        pad_painted(style, MAGENTA, "--dump-tokens", NAME_COL));
+    println!("  {}Print the parsed AST nodes, then exit",
+        pad_painted(style, MAGENTA, "--dump-ast", NAME_COL));
+
+    // --color is the only flag rn with distinct options / args
+    // so pad the flag + metavar as one lil unit then 
+    // chuck in the description
+    {
+        let flag = paint(style, MAGENTA, "--color");
+        let arg = paint(style, CYAN, "<when>");
+        let pad = " ".repeat(NAME_COL.saturating_sub(14));
+        let dflt = paint(style, DIM, "(default)");
+        println!("  {flag} {arg}{pad}auto {dflt}, always, or never");
+    }
 }
