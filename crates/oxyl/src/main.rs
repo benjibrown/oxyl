@@ -5,6 +5,7 @@ use oxyl_lexer::Lexer;
 use oxyl_parser::Parser;
 
 mod dump;
+mod help;
 
 // unix convetion (sysexists.h) - 0 for success, 1 for the operation 
 // itself failing, 2 for the user invoking anything incorrectly. 
@@ -31,6 +32,8 @@ fn main() {
     // Parse flags and positional argument.
     let mut dump_tokens = false;
     let mut dump_ast = false;
+    let mut show_help = false;
+    let mut show_version = false;
     let mut color = ColorChoice::Auto;
     let mut file: Option<String> = None;
 
@@ -40,14 +43,8 @@ fn main() {
         match arg.as_str() {
             "--dump-tokens" => dump_tokens = true, 
             "--dump-ast" => dump_ast = true,
-            "--help" | "-h" => {
-                print_help();
-                return;
-            }
-            "--version" | "-V" => {
-                println!("oxyl {}", env!("CARGO_PKG_VERSION"));
-                return;
-            }
+            "--help" | "-h" => show_help = true,
+            "--version" | "-V" => show_version = true,
             // support --color= and --color (without eqls)
             s if s.starts_with("--color=") => {
                 let value = &s["--color=".len()..];
@@ -101,10 +98,19 @@ fn main() {
     let err_style = resolve_style(color, std::io::stderr().is_terminal());
     let out_style = resolve_style(color, std::io::stdout().is_terminal());
 
+    if show_help {
+        help::print_help(out_style);
+        return;
+    }
+    if show_version {
+        println!("oxyl {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
     let path = match file {
         Some(p) => p,
         None => {
-            print_help();
+            help::print_help(out_style);
             std::process::exit(EXIT_USAGE);
         }
     };
@@ -203,32 +209,5 @@ fn resolve_style(choice: ColorChoice, is_tty: bool) -> Style {
             }
         }
     }
-}
-
-fn print_help() {
-    println!("oxyl {} - a LaTeX compiler (work in progress)", env!("CARGO_PKG_VERSION"));
-    println!();
-    println!("USAGE:");
-    println!("  oxyl [FLAGS] <file.tex>");
-    println!();
-    println!("FLAGS:");
-    println!("  --dump-tokens       Print every token with its byte span, then exit");
-    println!("  --dump-ast          Print the parsed AST nodes, then exit");
-    println!("  --color <when>      auto (default), always, or never");
-    println!("  --no-color          Alias for --color=never");
-    println!("  --version, -V       Print the oxyl version and exit");
-    println!("  --help, -h          Print this help message");
-    println!();
-    println!("EXIT CODES:");
-    println!("  0   success");
-    println!("  1   the file failed to lex/parse, or could not be read");
-    println!("  2   bad invocation (unknown flag, missing or extra arguments)");
-    println!();
-    println!("ENVIRONMENT:");
-    println!("  NO_COLOR            if set (and non-empty), disables ANSI colour");
-    println!("                      even on a TTY (https://no-color.org)");
-    println!("  CLICOLOR_FORCE      if set (non-empty), forces ANSI colour");
-    println!("                      even when stderr is piped or redirected");
-    println!("                      (https://bixense.com/clicolors)");
 }
 
