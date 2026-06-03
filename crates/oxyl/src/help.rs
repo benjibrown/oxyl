@@ -144,6 +144,27 @@ mod tests {
         let after_reset = &out[reset_idx + RESET.len()..];
         assert!(after_reset.chars().all(|c| c == ' '));
         assert_eq!(after_reset.len(), 18 - "--dump-tokens".len());
-        
+    }
+
+    #[test]
+    fn pad_painted_plain_pads_vis() {
+        let out = pad_painted(Style::Plain, MAGENTA, "--dump-ast", 18);
+        assert_eq!(out, "--dump-ast        ");
+        assert_eq!(out.chars().count(), 18);
+    }
+
+    #[test]
+    fn pad_painted_handles_longahh_input() {
+        // longer than width - no panic or -ve pad,
+        // just padded text and zero spaces
+        let out = pad_painted(Style::Plain, MAGENTA, "wayyyy too long", 4);
+        assert_eq!(out, "wayyyy too long");
+    }
+
+    #[test]
+    fn print_help_workslol() {
+        // make sure help actually works 
+        print_help(Style::Plain);
+        print_help(Style::Ansi);
     }
 }
