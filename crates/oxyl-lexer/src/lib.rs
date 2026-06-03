@@ -1,5 +1,7 @@
 // oxyl-lexer 
 
+use std::borrow::Cow;
+
 use oxyl_diagnostics::LexError;
 
 /// A half-open byte range `[start, end]` within a source file.
@@ -10,18 +12,22 @@ pub struct Span {
 }
 
 impl Span {
+    #[inline]
     pub fn new(start: usize, end: usize) -> Self {
         Self { start, end }
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.end - self.start
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.start == self.end
     }
 
+    #[inline]
     pub fn merge(self, other: Span) -> Span {
         Span {
             start: self.start.min(other.start),
@@ -38,8 +44,8 @@ impl std::fmt::Display for Span {
 
 /// The kind of a single lexical token.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TokenKind {
-    ControlSeq(String),
+pub enum TokenKind<'src> {
+    ControlSeq(Cow<'src>, str),
     BeginGroup,
     EndGroup,
     MathShift,
@@ -48,7 +54,7 @@ pub enum TokenKind {
     Superscript,
     Subscript,
     Tilde,
-    Comment(String),
+    Comment(Cow<'src>, str),
     /// A blank line (two or more consecutive newlines). Signals a new 
     /// paragraph - the parser does not need to count newlines itself.
     ParagraphBreak,
@@ -58,18 +64,19 @@ pub enum TokenKind {
 
 /// A token together with its location in the source.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Token {
-    pub kind: TokenKind,
+pub struct Token<'src> {
+    pub kind: TokenKind<'src>,
     pub span: Span,
 }
 
-impl Token {
-    pub fn new(kind: TokenKind, span: Span) -> Self {
+impl<'src> Token<'src> {
+    #[inline]
+    pub fn new(kind: TokenKind<'src>, span: Span) -> Self {
         Self { kind, span }
     }
 }
 
-impl std::fmt::Display for TokenKind {
+impl std::fmt::Display for TokenKind<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TokenKind::ControlSeq(name) => write!(f, "\\{name}"),
@@ -89,7 +96,7 @@ impl std::fmt::Display for TokenKind {
     }
 }
 
-impl std::fmt::Display for Token {
+impl std::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} @ {}", self.kind, self.span)
     }
@@ -97,12 +104,13 @@ impl std::fmt::Display for Token {
 
 /// The result of tokenising a source file.
 #[derive(Debug)] 
-pub struct LexResult {
-    pub tokens: Vec<Token>,
+pub struct LexResult<'src> {
+    pub tokens: Vec<Token><'src>,
     pub errors: Vec<LexError>,
 }
 
-impl LexResult {
+impl LexResult<'_> {
+    #[inline]
     pub fn has_errors(&self) -> bool {
         !self.errors.is_empty()
     }
@@ -118,12 +126,17 @@ pub struct Lexer<'src> {
 }
 
 impl<'src> Lexer<'src> {
+    #[inline]
     pub fn new(src: &'src str) -> Self {
         Self { src, pos: 0 }
     }
 
     pub fn tokenise(&mut self) -> LexResult {
-        let mut tokens = Vec::new();
+        // heurstic - avg token is 4 source bytes (one char per
+        // ascii letter, plus the occassional control word lol)
+        // over allocating is technically cheaper than 
+        // under allocating any costs.
+        let mut tokens = Vec::with_capacity(self.src.len() / 4 + 8);
         let mut errors = Vec::new();
         while self.pos < self.src.len() {
             match self.next_token() {
