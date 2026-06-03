@@ -1,7 +1,35 @@
+// The parser turns a flat token stream into a tree of Nodes 
+// TODO - formalise all below and put in docs 
+// - commands greedily pick up [] (optional args) and also {} 
+// which are mandatory args - until it finds a token that isnt any of these 
+// - a pair of $ tokens wraps a math node 
+// a \[...\] pair wraps a display math node. inline and display math 
+// children are parsed like ordinary text
+// TODO - atoms + scripts + operators !!
+// \begin \end {name} produce an env node whose body is parsed 
+// recusrively so nested envs work. the first mandatory arg 
+// after \begin is treated as the name, everything else 
+// stays in args 
+// comments are preserved as comment nodes for any source-fidelity 
+// tools to utilise :)
+// active specials ie & and ~ are align tab and tilde nodes, they have no 
+// children of their ownn - downstream passes that care about 
+// tabular layour or whatever can read them off the 
+// node sequence directly
+// every error carries a diag span pointing at the token 
+// that triggered the error so that the cli can render src 
+// contex directly from span !!!!!!
+
 use oxyl_diagnostics::Diagnostic;
 use oxyl_lexer::{Span, Token, TokenKind};
 
 use crate::ast::{Arg, Document, Node};
+
+mod helpers;
+use helpers::{diag_span, find_env_name, is_display_math_close, is_end_control_seq};
+
+#[cfg(test)]
+mod tests;
 
 
 /// Returned by [`Parser::parse`]. The document is always produced; errors 
