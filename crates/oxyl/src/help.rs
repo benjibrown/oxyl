@@ -114,4 +114,20 @@ pub fn print_help(style: Style) {
         paint(style, DIM, "https://bixense.com/clicolors"));
 }
 
-// TODO - test!!!!
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn paint_plain_passes_thru() {
+        assert_eq!(paint(Style::Plain, YELLOW, "USAGE:"), "USAGE:");
+    }
+
+    #[test]
+    fn paint_ansi_wraps_codes() {
+        let out = paint(Style::Ansi, MAGENTA, "--dump-tokens");
+        assert!(out.starts_with("\x1b["));
+        assert!(out.ends_with(RESET));
+        assert!(out.contains("--dump-tokens"));
+    }
+}
