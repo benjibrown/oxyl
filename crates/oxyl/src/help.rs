@@ -130,4 +130,20 @@ mod tests {
         assert!(out.ends_with(RESET));
         assert!(out.contains("--dump-tokens"));
     }
+
+    #[test]
+    fn pad_painted_keeps_padding() {
+        // padding must be plain spaces after the
+        // closing reset, not painted bytes within the
+        // escape sequence - otherwise will fry the 
+        // format width stuff :(
+        let out = pad_painted(Style::Ansi, MAGENTA, "--dump-tokens", 18);
+
+        // esc closes before the padding spaces
+        let reset_idx = out.find(RESET).expect("painted text contains RESET");
+        let after_reset = &out[reset_idx + RESET.len()..];
+        assert!(after_reset.chars().all(|c| c == ' '));
+        assert_eq!(after_reset.len(), 18 - "--dump-tokens".len());
+        
+    }
 }
