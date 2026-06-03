@@ -7,4 +7,4 @@ repository.workspace = true
 description = "Lexer for oxyl"
 
 [dependencies]
-oxyl-diagnostics = { path = "../oxyl-diagnostics", version = "0.1.20" } 
+oxyl-diagnostics = { path = "../oxyl-diagnostics", version = "0.1.21" } 

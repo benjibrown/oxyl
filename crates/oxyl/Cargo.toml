@@ -11,7 +11,7 @@ name = "oxyl"
 path = "src/main.rs"
 
 [dependencies]
-oxyl-lexer = { path = "../oxyl-lexer", version = "0.1.20" }
-oxyl-diagnostics = { path = "../oxyl-diagnostics", version = "0.1.20" }
-oxyl-parser = { path = "../oxyl-parser", version = "0.1.20" }
+oxyl-lexer = { path = "../oxyl-lexer", version = "0.1.21" }
+oxyl-diagnostics = { path = "../oxyl-diagnostics", version = "0.1.21" }
+oxyl-parser = { path = "../oxyl-parser", version = "0.1.21" }
 
