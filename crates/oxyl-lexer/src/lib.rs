@@ -369,4 +369,18 @@ mod tests {
     }
 
     // TODO - TESTS FOR COW STUFF
+
+    #[test]
+    fn control_seq_is_zero_copy() {
+        let src = "\\section";
+        let r = Lexer::new(src).tokenise();
+        match &r.tokens[0].kind {
+            TokenKind::ControlSeq(name) => {
+                assert!(matches!(name, Cow::Borrowed(_)),
+                    "control-world ControlSeq should be Cow::Borrowed");
+                assert_eq!(name.as_ref(), "section");
+            }
+            other => panic!("expected ControlSeq, got {other:?}"),
+        }
+    }
 }
