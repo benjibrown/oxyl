@@ -68,7 +68,7 @@ fn kind_code(kind: &TokenKind<'_>) -> Option<&'static str> {
 /// Print the token dump for `--dump-tokens`. Honours `style`: when
 /// `Plain`, output contains zero ansi - for scenarios where
 /// output is being piped etc.
-pub fn dump_tokens(tokens: &[Token<'src>], style: Style) {
+pub fn dump_tokens(tokens: &[Token<'_>], style: Style) {
     let header = format!("=== tokens ({}) ===", tokens.len());
     println!("{}", paint(style, BOLD, &header));
 
@@ -95,7 +95,7 @@ pub fn dump_tokens(tokens: &[Token<'src>], style: Style) {
 // prints the ast dump for the dump ast flag
 // each node renders on its own line 
 // container nodes recurse too which is so awesome
-pub fn dump_ast(nodes: &[Node<'src>], style: Style) {
+pub fn dump_ast(nodes: &[Node<'_>], style: Style) {
     let header = format!("=== AST ({} top-level node(s)) ===", nodes.len());
     println!("{}", paint(style, BOLD, &header));
     for node in nodes {
