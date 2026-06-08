@@ -4,16 +4,16 @@
 use super::*;
 use oxyl_lexer::Lexer;
 
-fn parse(src: &str) -> ParseResult {
+fn parse(src: &str) -> ParseResult<'_> {
     let tokens = Lexer::new(src).tokenise().tokens;
-    Parser::new(tokens).parse()
+    Parser::new(tokens, src).parse()
 }
 
-fn first_command(src: &str) -> (String, Vec<Arg>) {
+fn first_command(src: &str) -> (String, Vec<Arg<'_>>) {
     let r = parse(src);
     for node in &r.document.body {
         if let Node::Command { name, args, .. } = node {
-            return (name.clone(), args.clone());
+            return (name.to_string(), args.clone());
         }
     }
     panic!("no command found in: {src}");
@@ -124,7 +124,7 @@ fn inline_math_with_command() {
     assert!(r.errors.is_empty());
     if let Node::Math(children, _) = &r.document.body[0] {
         let names: Vec<_> = children.iter().filter_map(|n| match n {
-            Node::Command { name, .. } => Some(name.as_str()),
+            Node::Command { name, .. } => Some(name.as_ref()),
             _ => None, 
         }).collect();
         assert_eq!(names, vec!["alpha", "beta"]);
@@ -179,7 +179,7 @@ fn display_math_simple() {
 
 #[test]
 fn display_math_with_command() {
-    let r = parse("\\[ \\sum_{i=0}^n i \\]");
+    let r = parse("\\[ \\sum_{i=0}^{n} i \\]");
     assert!(r.errors.is_empty(), "{:?}", r.errors);
     assert!(matches!(&r.document.body[0], Node::DisplayMath(_, _)));
 }

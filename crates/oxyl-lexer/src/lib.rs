@@ -284,11 +284,11 @@ impl<'src> Lexer<'src> {
 mod tests {
     use super::*;
     
-    fn lex(src: &str) -> LexResult {
+    fn lex(src: &str) -> LexResult<'_> {
         Lexer::new(src).tokenise()
     }
 
-    fn kinds(src: &str) -> Vec<TokenKind> {
+    fn kinds(src: &str) -> Vec<TokenKind<'_>> {
         lex(src).tokens.into_iter().map(|t| t.kind).collect()
     }
 
@@ -368,4 +368,6 @@ mod tests {
             TokenKind::Char('x'),
         ]);
     }
+
+    // TODO - TESTS FOR COW STUFF
 }

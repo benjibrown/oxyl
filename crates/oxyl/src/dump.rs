@@ -304,13 +304,13 @@ mod tests {
         let nodes = vec![
             Node::Command {
                 name: "section".into(),
-                args: vec![Arg::Mandatory(vec![Node::Text("Intro".to_string(), s())])],
+                args: vec![Arg::Mandatory(vec![Node::Text("Intro".into(), s())])],
                 span: s(),
             },
             Node::ParagraphBreak(s()),
             Node::Environment {
                 name: "tabular".into(),
-                args: vec![Arg::Mandatory(vec![Node::Text("cc".to_string(), s())])],
+                args: vec![Arg::Mandatory(vec![Node::Text("cc".into(), s())])],
                 body: vec![
                     Node::Text("a".into(), s()),
                     Node::AlignTab(s()),
