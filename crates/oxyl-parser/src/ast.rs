@@ -43,7 +43,7 @@ Command { name: Cow<'src, str>, args: Vec<Arg<'src>>, span: Span },
     },
 }
 
-impl Node {
+impl<'src> Node<'src> {
     pub fn span(&self) -> Span {
         match self {
             Node::Text(_, s) => *s,
