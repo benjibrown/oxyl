@@ -116,9 +116,8 @@ impl LexResult<'_> {
     }
 }
 
-// ----
-// Lexer 
-// ----
+//
+// lexer stuff
 
 pub struct Lexer<'src> {
     src: &'src str,

@@ -136,7 +136,7 @@ impl<'src> Parser<'src> {
                         Diagnostic::error("E043", "stray '\\end' (no matching '\\begin')")
                             .with_span(diag_span(tok.span)),
                     );
-                    // Eat its name arg so we don't cause a slippery slope of errors lol.
+                    // wat its name arg so we don't cause a slippery slope of errors lol
                     let _ = self.parse_args();
                 }
 
@@ -156,7 +156,7 @@ impl<'src> Parser<'src> {
                     }
                 }
 
-                // A bare `\]` outside display math is a stray closer.
+                // W error 32 icl
                 TokenKind::ControlSeq(ref name) if name.as_ref() == "]" => {
                     self.errors.push(
                         Diagnostic::error("E032", "stray '\\]' (no matching '\\[')")
@@ -167,7 +167,7 @@ impl<'src> Parser<'src> {
                 TokenKind::ControlSeq(name) => {
                     let cmd_span = tok.span; 
                     let args = self.parse_args();
-                    // Extend the span to cover the last argument. 
+                    // extend the span to cover the last argument
                     let full_span = args.last()
                         .and_then(|a| match a {
                             Arg::Mandatory(children) => children.last().map(|n| n.span()),
@@ -212,7 +212,8 @@ impl<'src> Parser<'src> {
                 TokenKind::AlignTab => nodes.push(Node::AlignTab(tok.span)),
                 TokenKind::Tilde => nodes.push(Node::Tilde(tok.span)),
 
-                // Everything else is left unhandled for now so skip it.
+                // everything else is left unhandled for now so skip it (sorry for those who use
+                // really niche latex cmds lol)
                 _ => {}
             }
         }
@@ -228,7 +229,7 @@ impl<'src> Parser<'src> {
         let mut args = Vec::new();
         
         loop {
-            // Skip spaces between the command and its next argument.
+            // skip spaces between the command and its next argument
             if matches!(self.peek_kind(), Some(TokenKind::Space)) {
                 self.bump();
             }
@@ -244,7 +245,7 @@ impl<'src> Parser<'src> {
     }    
 
     fn parse_mandatory_arg(&mut self) -> Arg<'src> {
-        // Consume the opening brace, remembering its span for diagnostics.
+        // consume the opening brace - imagine oxyl actually eating
         let open_span = self.bump().unwrap().span;
         let children = self.parse_nodes(|k| matches!(k, TokenKind::EndGroup));
         if matches!(self.peek_kind(), Some(TokenKind::EndGroup)) {
@@ -263,7 +264,7 @@ impl<'src> Parser<'src> {
     fn parse_environment(&mut self, begin_span: Span) -> Node<'src> {
         let mut args = self.parse_args();
 
-        // First mandatory arg is the environment name. Without one we
+        // first mandatory arg is the environment name without one just
         // record the error and fall back to a plain cmd so the AST 
         // still contains atleast something useful
         let (name_idx, env_name) = match find_env_name(&args) {
@@ -284,7 +285,7 @@ impl<'src> Parser<'src> {
 
         let body = self.parse_nodes(is_end_control_seq);
 
-        // Try consume the matching \end
+        // try consume the matching \end
         let close_span = if matches!(self.peek_kind(), Some(TokenKind::ControlSeq(s)) if s.as_ref() == "end") {
             let end_tok = self.bump().unwrap();
             let end_args = self.parse_args();
@@ -301,7 +302,7 @@ impl<'src> Parser<'src> {
                 );
             }
 
-            // Stretch the span to the last argument of \end (if any)
+            // stretch the span to the last argument of \end (if any)
             end_args.last()
                 .and_then(|a| match a {
                     Arg::Mandatory(c) | Arg::Optional(c) => c.last().map(|n| n.span()),
@@ -325,7 +326,7 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_optional_arg(&mut self) -> Arg<'src> {
-        // Consume the opening `[`, remembering its span for diagnostics.
+        // consume the opening [ remembering its span for diagnostics.
         let open_span = self.bump().unwrap().span;
         let children = self.parse_nodes(|k| matches!(k, TokenKind::Char(']')));
         if matches!(self.peek_kind(), Some(TokenKind::Char(']'))) {

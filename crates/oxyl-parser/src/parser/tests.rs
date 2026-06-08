@@ -103,7 +103,7 @@ fn unclosed_optional_arg_produces_error() {
 
 #[test]
 fn bracket_outside_command_is_text() {
-    // A `'[` not directly after a control sequence is just ordinary text.
+    // a [ not directly after a control sequence is just ordinary text
     let r = parse("hello [world]");
     assert!(r.errors.is_empty());
     assert!(matches!(&r.document.body[0], Node::Text(s, _) if s == "hello [world]"));
@@ -141,9 +141,9 @@ fn unclosed_math_produces_error() {
 
 #[test]
 fn parser_errors_carry_spans() {
-    // Every parser error must point at the offending opener so the CLI 
+    // every parser error must point at the offending opener so the CLI 
     // can render the location from the diagnostic span instead of
-    // picking it ouf the message text.
+    // picking it ouf the message text
     let cases = [
         "\\cmd{oops", // E021
         "\\cmd[oops", // E022
@@ -297,7 +297,7 @@ fn align_tab_becomes_node() {
 fn tilde_becomes_node() {
     let r = parse("oxyl.~isthebest");
     assert!(r.errors.is_empty());
-    // Order should be oxyl. (text), tilde, isthebest (text)
+    // order should be oxyl. (text), tilde, isthebest (text)
     assert!(matches!(&r.document.body[1], Node::Tilde(_)));
 }
 

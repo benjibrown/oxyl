@@ -29,7 +29,7 @@ enum ColorChoice {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    // Parse flags and positional argument.
+    // parse flags and positional arg
     let mut dump_tokens = false;
     let mut dump_ast = false;
     let mut show_help = false;
@@ -123,7 +123,7 @@ fn main() {
         }
     };
 
-    // Build the source view once so every diagnostic shares its line index
+    // build the source view once so every diagnostic shares its line index
     // and so renderings include the filename to get --> file:line:col
     let source = Source::with_name(&src, &path);
 
@@ -159,7 +159,7 @@ fn main() {
         std::process::exit(EXIT_COMPILE);
     }
 
-    // Success: print a brief summary.
+    // rint a summary.
     let node_count = parse_result.document.body.len();
     println!("ok: parsed {node_count} top-level node(s) from {path}");
 }

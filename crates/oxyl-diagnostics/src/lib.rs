@@ -269,7 +269,7 @@ mod tests {
     fn render_falls_back_when_no_span() {
         let src = Source::new("anything");
         let d = Diagnostic::error("E001", "no location");
-        // Without a span, render should match plain Display.
+        // without a span render should match plain Display
         assert_eq!(d.render(&src), d.to_string());
     }
 
