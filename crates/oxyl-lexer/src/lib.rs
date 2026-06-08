@@ -45,7 +45,7 @@ impl std::fmt::Display for Span {
 /// The kind of a single lexical token.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind<'src> {
-    ControlSeq(Cow<'src>, str),
+    ControlSeq(Cow<'src, str>),
     BeginGroup,
     EndGroup,
     MathShift,
@@ -54,7 +54,7 @@ pub enum TokenKind<'src> {
     Superscript,
     Subscript,
     Tilde,
-    Comment(Cow<'src>, str),
+    Comment(Cow<'src, str>),
     /// A blank line (two or more consecutive newlines). Signals a new 
     /// paragraph - the parser does not need to count newlines itself.
     ParagraphBreak,
@@ -105,7 +105,7 @@ impl std::fmt::Display for Token<'_> {
 /// The result of tokenising a source file.
 #[derive(Debug)] 
 pub struct LexResult<'src> {
-    pub tokens: Vec<Token><'src>,
+    pub tokens: Vec<Token<'src>>,
     pub errors: Vec<LexError>,
 }
 
@@ -131,7 +131,7 @@ impl<'src> Lexer<'src> {
         Self { src, pos: 0 }
     }
 
-    pub fn tokenise(&mut self) -> LexResult {
+    pub fn tokenise(&mut self) -> LexResult<'src> {
         // heurstic - avg token is 4 source bytes (one char per
         // ascii letter, plus the occassional control word lol)
         // over allocating is technically cheaper than 
@@ -148,10 +148,18 @@ impl<'src> Lexer<'src> {
         LexResult { tokens, errors }
     }
 
+    #[inline]
     fn peek(&self) -> Option<char> {
-        self.src[self.pos..].chars().next()
+        let bytes = self.src.as_bytes();
+        let b = *bytes.get(self.pos)?;
+        if b < 0x80 {
+            Some(b as char) 
+        } else {
+            self.src[self.pos..].chars().next()
+        }
     }
 
+    #[inline]
     fn bump(&mut self) -> Option<char> {
         let c = self.peek()?;
         self.pos += c.len_utf8();
@@ -166,7 +174,7 @@ impl<'src> Lexer<'src> {
         &self.src[start..self.pos]
     }
 
-    fn next_token(&mut self) -> Result<Option<Token>, LexError> {
+    fn next_token(&mut self) -> Result<Option<Token<'src>>, LexError> {
         let start = self.pos;
         let c = match self.peek() {
             Some(c) => c,
@@ -178,10 +186,12 @@ impl<'src> Lexer<'src> {
             return Err(LexError::NonAsciiChar { pos: start, ch: c });
         }
 
-        // Line comments.
+        // line comments
         if c == '%' {
             self.bump();
-            let body = self.take_while(|ch| ch != '\n').to_owned();
+            let body_start = self.pos;
+            self.take_while(|ch| ch != '\n');
+            let body = Cow::Borrowed(&self.src[body_start..self.pos]);
             if self.peek() == Some('\n') {
                 self.bump();
             }
@@ -191,32 +201,32 @@ impl<'src> Lexer<'src> {
             )));
         }
         
-        // Newlines: detect paragraph breaks (blank lines) vs ordinary space.
+        // newline detect paragraph breaks and allat
         if c == '\n' {
             self.bump();
             // Skips any spaces/tabs on the next line.
             self.take_while(|ch| ch == ' ' || ch == '\t');
             if self.peek() == Some('\n') {
-                // Blank line - consume remaining blank-line whitespace.
+                // blank line - consume remaining blank line whitespace.
                 self.take_while(|ch| ch == '\n' || ch == ' ' || ch == '\t');
                 return Ok(Some(Token::new(
-                        TokenKind::ParagraphBreak,
-                        Span::new(start, self.pos),
+                    TokenKind::ParagraphBreak,
+                    Span::new(start, self.pos),
                 )));
             }
-            // Single newline is just whitespace. 
+            //single newline is just whitespace
             return Ok(Some(Token::new(TokenKind::Space, Span::new(start, self.pos))));
         }
 
-        // Horizontal whitespace.
+        // horizontal whitespace
         if c == ' ' || c == '\t' {
             self.take_while(|ch| ch == ' ' || ch == '\t');
             return Ok(Some(Token::new(TokenKind::Space, Span::new(start, self.pos))));
         }
 
-        // Control sequences.
+        // control sequences
         //
-        // TeX has two flavours - a control word like \foo is a \ + a run of 
+        // TeX has two ways of doing this - a control word like \foo is a \ + a run of 
         // letters, and eats trailing spaces; a control symbol like \$, \\, \[..\]
         // is exactly one letter (following the \) and does not eat spaces.
         // Both share the ControlSeq token kind tho.
@@ -227,17 +237,22 @@ impl<'src> Lexer<'src> {
                 Some(next) if next.is_ascii_alphabetic() => {
                     let name_start = self.pos;
                     self.take_while(|ch| ch.is_ascii_alphabetic());
-                    let name = self.src[name_start..self.pos].to_owned();
+                    let name = Cow::Borrowed(&self.src[name_start..self.pos]);
                     self.take_while(|ch| ch == ' ' || ch == '\t');
                     return Ok(Some(Token::new(
                         TokenKind::ControlSeq(name),
                         Span::new(start, self.pos),
                     )));
                 }
-                Some(sym) => {
+                Some(_sym) => {
+                    // control symbolss 
+                    // borrow the one byte slice from src so no need to allocate a one char string
+                    // :)
+                    let sym_start = self.pos;
                     self.bump();
+                    let name = Cow::Borrowed(&self.src[sym_start..self.pos]);
                     return Ok(Some(Token::new(
-                        TokenKind::ControlSeq(sym.to_string()),
+                        TokenKind::ControlSeq(name),
                         Span::new(start, self.pos),
                     )));
                 }
