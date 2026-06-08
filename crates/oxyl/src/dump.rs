@@ -47,7 +47,7 @@ fn paint(style: Style, code: &str, s: &str) -> String {
 }
 
 /// SGR code for a given token kind
-fn kind_code(kind: &TokenKind) -> Option<&'static str> {
+fn kind_code(kind: &TokenKind<'_>) -> Option<&'static str> {
     match kind {
         TokenKind::ControlSeq(_) => Some(MAGENTA),
         TokenKind::BeginGroup
@@ -68,7 +68,7 @@ fn kind_code(kind: &TokenKind) -> Option<&'static str> {
 /// Print the token dump for `--dump-tokens`. Honours `style`: when
 /// `Plain`, output contains zero ansi - for scenarios where
 /// output is being piped etc.
-pub fn dump_tokens(tokens: &[Token], style: Style) {
+pub fn dump_tokens(tokens: &[Token<'src>], style: Style) {
     let header = format!("=== tokens ({}) ===", tokens.len());
     println!("{}", paint(style, BOLD, &header));
 
@@ -95,7 +95,7 @@ pub fn dump_tokens(tokens: &[Token], style: Style) {
 // prints the ast dump for the dump ast flag
 // each node renders on its own line 
 // container nodes recurse too which is so awesome
-pub fn dump_ast(nodes: &[Node], style: Style) {
+pub fn dump_ast(nodes: &[Node<'src>], style: Style) {
     let header = format!("=== AST ({} top-level node(s)) ===", nodes.len());
     println!("{}", paint(style, BOLD, &header));
     for node in nodes {
@@ -103,7 +103,7 @@ pub fn dump_ast(nodes: &[Node], style: Style) {
     }
 }
 
-fn print_node(node: &Node, depth: usize, style: Style) {
+fn print_node(node: &Node<'_>, depth: usize, style: Style) {
     let indent = "  ".repeat(depth);
     let span = paint(style, DIM, &format_span(node.span()));
 
@@ -173,7 +173,7 @@ fn print_node(node: &Node, depth: usize, style: Style) {
     }
 }
 
-fn print_arg(arg: &Arg, depth: usize, style: Style) {
+fn print_arg(arg: &Arg<'_>, depth: usize, style: Style) {
     let indent = "  ".repeat(depth);
     match arg {
         Arg::Mandatory(children) => {
@@ -202,7 +202,7 @@ mod tests {
     use super::*;
     use oxyl_lexer::Span;
 
-    fn tok(kind: TokenKind) -> Token {
+    fn tok(kind: TokenKind<'static>) -> Token<'static> {
         Token::new(kind, Span::new(0, 1))
     }
 
@@ -303,18 +303,18 @@ mod tests {
         // go thu recursively, not stop at the first depth
         let nodes = vec![
             Node::Command {
-                name: "section".to_string(),
+                name: "section".into(),
                 args: vec![Arg::Mandatory(vec![Node::Text("Intro".to_string(), s())])],
                 span: s(),
             },
             Node::ParagraphBreak(s()),
             Node::Environment {
-                name: "tabular".to_string(),
+                name: "tabular".into(),
                 args: vec![Arg::Mandatory(vec![Node::Text("cc".to_string(), s())])],
                 body: vec![
-                    Node::Text("a".to_string(), s()),
+                    Node::Text("a".into(), s()),
                     Node::AlignTab(s()),
-                    Node::Text("b".to_string(), s()),
+                    Node::Text("b".into(), s()),
                 ],
                 span: s(),
             },

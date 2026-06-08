@@ -143,7 +143,7 @@ fn main() {
     }
 
     // parse stuff
-    let parse_result = Parser::new(lex_result.tokens).parse();
+    let parse_result = Parser::new(lex_result.tokens, &src).parse();
 
     for d in &parse_result.errors {
         eprintln!("{}", d.render_styled(&source, err_style));
