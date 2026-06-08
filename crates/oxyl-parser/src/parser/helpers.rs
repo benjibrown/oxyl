@@ -15,15 +15,15 @@ pub(super) fn diag_span(s: Span) -> DiagSpan {
 }
 
 /// Stop predicate for `parse_nodes` when scanning the body of `\[ ... \]`.
-/// #[inline]
+#[inline]
 pub(super) fn is_display_math_close(k: &TokenKind<'_>) -> bool {
-    matches!(k, TokenKind::ControlSeq(s) if s == "]")
+    matches!(k, TokenKind::ControlSeq(s) if s.as_ref() == "]")
 }
 
 /// Stop predicate for `parse_nodes` when scanning the body of an environment.
 #[inline]
 pub(super) fn is_end_control_seq(k: &TokenKind<'_>) -> bool {
-    matches!(k, TokenKind::ControlSeq(s) if s == "end")
+    matches!(k, TokenKind::ControlSeq(s) if s.as_ref() == "end")
 }
 
 /// Find the first `Arg::Mandatory` whose children are all `Node::Text`,
